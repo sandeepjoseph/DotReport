@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 54" fill="none">
+    <!-- Person-X figure -->
+    <!-- Crossing diagonals: top-left to centre, top-right to centre, centre to bottom-left, centre to bottom-right -->
+    <line x1="4"  y1="4"  x2="22" y2="27" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+    <line x1="40" y1="4"  x2="22" y2="27" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+    <line x1="22" y1="27" x2="6"  y2="50" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+    <line x1="22" y1="27" x2="38" y2="50" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+    <!-- Head circle -->
+    <circle cx="22" cy="10" r="7" fill="#f59e0b"/>
+    <!-- Centre body dot at intersection -->
+    <circle cx="22" cy="27" r="3.5" fill="#f59e0b"/>
+    <!-- YOPST wordmark -->
+    <text x="56" y="38" font-family="-apple-system,'Helvetica Neue',sans-serif" font-weight="900" font-size="30" fill="white" letter-spacing="-1">YOPST</text>
+    <!-- Tagline -->
+    <text x="56" y="52" font-family="-apple-system,'Helvetica Neue',sans-serif" font-size="9" fill="#a0a0c0" letter-spacing="0.08em">Where social meets impact!</text>
+</svg>

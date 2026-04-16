@@ -4,7 +4,7 @@
 
 <div class="ec-shell @Theme.CurrentThemeClass" id="ec-root">
 
-    <!-- 2026 Geometric background layer — purely decorative, pointer-events:none -->
+    <!-- 2026 Geometric background layer -->
     <div class="ec-geo-layer" aria-hidden="true">
         <div class="ec-geo ec-geo--grid"></div>
         <div class="ec-geo ec-geo--poly-bg"></div>
@@ -16,23 +16,40 @@
         <div class="ec-geo ec-geo--ring-b"></div>
         <div class="ec-geo ec-geo--hex-c"></div>
         <div class="ec-geo ec-geo--tri-b"></div>
-        <!-- Neon dot constellations — staggered twinkle -->
         <div class="ec-geo ec-geo--dots-a"></div>
         <div class="ec-geo ec-geo--dots-b"></div>
         <div class="ec-geo ec-geo--dots-c"></div>
         <div class="ec-geo ec-geo--dots-d"></div>
     </div>
 
+    <!-- ── Top Header ── -->
     <header class="ec-topbar">
         <div class="ec-topbar__brand">
-            <span class="ec-topbar__serial">DR-01</span>
-            <span class="ec-topbar__name">DotReport EdgeCore</span>
+            <!-- XyOPST Logo mark (inline SVG) -->
+            <a href="/" class="ec-xyopst-brand" title="XyOPST Intelligence">
+                <svg class="ec-xyopst-mark" viewBox="0 0 46 46" xmlns="http://www.w3.org/2000/svg" fill="none">
+                    <line x1="5"  y1="5"  x2="23" y2="24" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
+                    <line x1="41" y1="5"  x2="23" y2="24" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
+                    <line x1="23" y1="24" x2="8"  y2="41" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
+                    <line x1="23" y1="24" x2="38" y2="41" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
+                    <circle cx="23" cy="11" r="6.5" fill="#f59e0b"/>
+                    <circle cx="23" cy="24" r="3.5" fill="#f59e0b"/>
+                </svg>
+                <span class="ec-xyopst-wordmark">X<span class="ec-xyopst-rest">YOPST</span></span>
+            </a>
+            <div class="ec-topbar__divider"></div>
+            <div class="ec-topbar__product">
+                <span class="ec-topbar__product-name">DotReport</span>
+                <span class="ec-topbar__product-sub">EdgeCore · REV-2026-A</span>
+            </div>
         </div>
+
         <nav class="ec-topbar__nav">
-            <a href="/" class="ec-nav-link @(Nav.Uri.EndsWith("/") ? "ec-nav-link--active" : "")">INDEX</a>
+            <a href="/" class="ec-nav-link @(Nav.Uri.EndsWith("/") || Nav.Uri.EndsWith("/#") ? "ec-nav-link--active" : "")">INDEX</a>
             <a href="/provision" class="ec-nav-link @(Nav.Uri.Contains("provision") ? "ec-nav-link--active" : "")">PROVISION</a>
-            <a href="/report" class="ec-nav-link @(Nav.Uri.Contains("report") ? "ec-nav-link--active" : "")">REPORT</a>
+            <a href="/report"    class="ec-nav-link @(Nav.Uri.Contains("report")    ? "ec-nav-link--active" : "")">REPORT</a>
         </nav>
+
         <div class="ec-topbar__controls">
             <ModelStatusBar />
             <ThemeToggle />
@@ -43,8 +60,29 @@
         @Body
     </main>
 
-    <footer class="ec-footer">
-        <span class="ec-footer__stamp">NETFORGE / EDGECORE / REV-2026-A</span>
-        <span class="ec-footer__compute">ALL COMPUTE: CLIENT-SIDE</span>
+    <!-- ── Footer ── -->
+    <footer class="ec-footer ec-footer--full">
+        <div class="ec-footer__left">
+            <svg class="ec-footer__logo-mark" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" fill="none">
+                <line x1="3" y1="3" x2="14" y2="14" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+                <line x1="25" y1="3" x2="14" y2="14" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+                <line x1="14" y1="14" x2="5"  y2="25" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+                <line x1="14" y1="14" x2="23" y2="25" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="14" cy="7"  r="4" fill="#f59e0b"/>
+                <circle cx="14" cy="14" r="2" fill="#f59e0b"/>
+            </svg>
+            <div class="ec-footer__company">
+                <span class="ec-footer__company-name">XyOPST Intelligence</span>
+                <span class="ec-footer__company-tag">Where social meets impact!</span>
+            </div>
+        </div>
+        <div class="ec-footer__center">
+            <span class="ec-footer__product-tag">DotReport EdgeCore · Community Edition · MIT License</span>
+            <span class="ec-footer__compute-tag">ALL INFERENCE: CLIENT-SIDE · ZERO DATA TRANSMISSION</span>
+        </div>
+        <div class="ec-footer__right">
+            <span class="ec-footer__loc">&#x1F4CD; Global · hello@xyopst.com</span>
+            <span class="ec-footer__copy">&copy; 2026 XyOPST · xyopst.com</span>
+        </div>
     </footer>
 </div>

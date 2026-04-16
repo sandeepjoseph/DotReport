@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using DotReport.Client.Models;
 
 namespace DotReport.Client.Services;
@@ -31,7 +32,7 @@ public sealed class ConsolidatorProxy
     public async IAsyncEnumerable<string> InferAsync(
         string userContent,
         string systemPrompt,
-        CancellationToken ct = default)
+        [EnumeratorCancellation] CancellationToken ct = default)
     {
         _state.IsProcessing = true;
         NotifyStateChanged();

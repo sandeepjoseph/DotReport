@@ -42,48 +42,48 @@
             </svg>
 
             <!-- Product identity -->
-            <div style="margin-top:18px; font-size:13px; font-weight:bold; letter-spacing:0.22em; color:#ffffff">
+            <div style="margin-top:18px; font-size:15px; font-weight:bold; letter-spacing:0.2em; color:#ffffff">
                 DOTREPORT / EDGECORE
             </div>
-            <div style="margin-top:4px; font-size:8px; letter-spacing:0.18em; color:#555555">
+            <div style="margin-top:5px; font-size:10px; letter-spacing:0.12em; color:#aaaaaa">
                 NET-FORGE DOCUMENT ANALYSIS SYSTEM — REV-2026-A
             </div>
 
             <!-- Progress block -->
-            <div style="margin-top:32px; width:340px; display:flex; flex-direction:column; gap:10px;">
+            <div style="margin-top:36px; width:380px; display:flex; flex-direction:column; gap:12px;">
 
                 <!-- Bar label row -->
                 <div style="display:flex; justify-content:space-between; align-items:baseline;">
-                    <span style="font-size:8px; letter-spacing:0.18em; color:#888888">
+                    <span style="font-size:10px; letter-spacing:0.12em; color:#cccccc; font-weight:bold">
                         EXECUTION ENGINE LOAD IN PROGRESS
                     </span>
-                    <span id="ec-pct" style="font-size:9px; font-weight:bold; letter-spacing:0.1em; color:#ffffff">
+                    <span id="ec-pct" style="font-size:12px; font-weight:bold; letter-spacing:0.08em; color:#ffffff">
                         0%
                     </span>
                 </div>
 
                 <!-- Segmented progress track -->
-                <div style="position:relative; height:6px; background:#1a1a1a; border:1px solid #333333; overflow:hidden;">
+                <div style="position:relative; height:8px; background:#1a1a1a; border:1px solid #444444; overflow:hidden;">
                     <div id="ec-bar" style="
                         position:absolute; left:0; top:0; bottom:0; width:0%;
                         background:#ffffff;
                         transition:width 280ms linear;"></div>
                     <!-- Segment ticks overlaid -->
                     <div style="position:absolute; inset:0; display:flex; justify-content:space-between; pointer-events:none;">
-                        <div style="width:1px; background:#0d0d0d;"></div>
-                        <div style="width:1px; background:#0d0d0d;"></div>
-                        <div style="width:1px; background:#0d0d0d;"></div>
-                        <div style="width:1px; background:#0d0d0d;"></div>
-                        <div style="width:1px; background:#0d0d0d;"></div>
-                        <div style="width:1px; background:#0d0d0d;"></div>
-                        <div style="width:1px; background:#0d0d0d;"></div>
-                        <div style="width:1px; background:#0d0d0d;"></div>
-                        <div style="width:1px; background:#0d0d0d;"></div>
+                        <div style="width:2px; background:#0d0d0d;"></div>
+                        <div style="width:2px; background:#0d0d0d;"></div>
+                        <div style="width:2px; background:#0d0d0d;"></div>
+                        <div style="width:2px; background:#0d0d0d;"></div>
+                        <div style="width:2px; background:#0d0d0d;"></div>
+                        <div style="width:2px; background:#0d0d0d;"></div>
+                        <div style="width:2px; background:#0d0d0d;"></div>
+                        <div style="width:2px; background:#0d0d0d;"></div>
+                        <div style="width:2px; background:#0d0d0d;"></div>
                     </div>
                 </div>
 
                 <!-- Stage readout -->
-                <div id="ec-stage" style="font-size:8px; letter-spacing:0.14em; color:#555555; min-height:12px;">
+                <div id="ec-stage" style="font-size:11px; letter-spacing:0.1em; color:#aaaaaa; min-height:16px;">
                     LOADING WASM RUNTIME
                 </div>
             </div>

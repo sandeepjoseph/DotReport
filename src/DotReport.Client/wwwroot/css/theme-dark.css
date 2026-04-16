@@ -43,6 +43,13 @@
     --ec-error:  #f43f5e;
 }
 
+/* Base background — critical: without this, body is browser-default white */
+html, body {
+    background: var(--ec-bg-base);
+    color: var(--ec-text-primary);
+}
+.ec-shell { background: var(--ec-bg-base); }
+
 /* Topbar: brushed metal variant */
 .ec-theme--dark .ec-topbar {
     background: #111111;

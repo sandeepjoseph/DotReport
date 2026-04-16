@@ -50,7 +50,8 @@
         #bs-hex-a {
             top:-150px; right:-150px;
             width:560px; height:560px;
-            border:1px solid rgba(99,102,241,0.14);
+            border:2px solid rgba(99,102,241,0.38);
+            box-shadow:0 0 80px rgba(99,102,241,0.1), inset 0 0 80px rgba(99,102,241,0.05);
             clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
             animation:bs-spin 90s linear infinite;
         }
@@ -58,7 +59,7 @@
         #bs-hex-b {
             top:-70px; right:-70px;
             width:320px; height:320px;
-            border:1px solid rgba(99,102,241,0.07);
+            border:1px solid rgba(99,102,241,0.24);
             clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
             animation:bs-rspin 55s linear infinite;
         }
@@ -66,7 +67,8 @@
         #bs-tri-a {
             bottom:-120px; left:-100px;
             width:480px; height:480px;
-            border:1px solid rgba(244,63,94,0.09);
+            border:2px solid rgba(244,63,94,0.30);
+            box-shadow:0 0 60px rgba(244,63,94,0.07);
             clip-path:polygon(50% 0%,0% 100%,100% 100%);
             animation:bs-spin 130s linear infinite;
         }
@@ -74,14 +76,16 @@
         #bs-dia {
             top:35%; left:-80px;
             width:200px; height:200px;
-            border:1px solid rgba(6,182,212,0.11);
+            border:1px solid rgba(6,182,212,0.35);
+            box-shadow:0 0 24px rgba(6,182,212,0.09);
             animation:bs-float2 9s ease-in-out infinite;
         }
         /* Large ring — bottom right */
         #bs-ring-a {
             bottom:-180px; right:8%;
             width:420px; height:420px;
-            border:1px solid rgba(6,182,212,0.07);
+            border:2px solid rgba(6,182,212,0.26);
+            box-shadow:0 0 50px rgba(6,182,212,0.07);
             border-radius:50%;
             animation:bs-rspin 110s linear infinite;
         }
@@ -89,7 +93,7 @@
         #bs-ring-b {
             bottom:-100px; right:13%;
             width:250px; height:250px;
-            border:1px solid rgba(6,182,212,0.05);
+            border:1px solid rgba(6,182,212,0.20);
             border-radius:50%;
             animation:bs-spin 70s linear infinite;
         }
@@ -97,7 +101,8 @@
         #bs-hex-c {
             top:60px; left:40px;
             width:90px; height:90px;
-            border:1px solid rgba(245,158,11,0.16);
+            border:1px solid rgba(245,158,11,0.45);
+            box-shadow:0 0 18px rgba(245,158,11,0.12);
             clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
             animation:bs-float 7s ease-in-out infinite;
         }
@@ -105,7 +110,8 @@
         #bs-tri-b {
             top:28%; right:6%;
             width:72px; height:72px;
-            border:1px solid rgba(244,63,94,0.14);
+            border:1px solid rgba(244,63,94,0.40);
+            box-shadow:0 0 14px rgba(244,63,94,0.1);
             clip-path:polygon(50% 0%,0% 100%,100% 100%);
             animation:bs-float 10s ease-in-out infinite 2s;
         }
@@ -265,10 +271,10 @@
     <!-- Core app interop (file download, drag-drop, theme switching) -->
     <script src="js/app-interop.js"></script>
 
-    <!-- Blazor WASM bootstrap — autostart disabled so we control the promise -->
-    <script src="_framework/blazor.webassembly.js" autostart="false"></script>
+    <!-- Blazor WASM bootstrap — auto-start (default) -->
+    <script src="_framework/blazor.webassembly.js"></script>
 
-    <!-- Execution engine load progress + Blazor start -->
+    <!-- Boot screen animation + auto-dismiss watcher -->
     <script>
         (function () {
             const bar   = document.getElementById('ec-bar');
@@ -286,9 +292,7 @@
                 { at: 90, label: 'FINALISING ENGINE STATE' },
             ];
 
-            let current = 0;
-            let stageIdx = 0;
-            let dismissed = false;
+            let current = 0, stageIdx = 0;
 
             function setProgress(value) {
                 current = Math.min(value, 99);
@@ -296,29 +300,10 @@
                 if (pct) pct.textContent = Math.floor(current) + '%';
                 for (let i = stages.length - 1; i >= 0; i--) {
                     if (current >= stages[i].at) {
-                        if (stageIdx !== i) {
-                            stageIdx = i;
-                            if (stage) stage.textContent = stages[i].label;
-                        }
+                        if (stageIdx !== i) { stageIdx = i; if (stage) stage.textContent = stages[i].label; }
                         break;
                     }
                 }
-            }
-
-            function dismissBoot() {
-                if (dismissed) return;
-                dismissed = true;
-                if (bar)   { bar.style.transition = 'width 160ms linear'; bar.style.width = '100%'; }
-                if (pct)   pct.textContent = '100%';
-                if (stage) stage.textContent = 'ENGINE READY';
-                setTimeout(() => {
-                    const boot = document.getElementById('ec-boot');
-                    if (boot) {
-                        boot.style.transition = 'opacity 300ms linear';
-                        boot.style.opacity = '0';
-                        setTimeout(() => { boot.style.display = 'none'; }, 320);
-                    }
-                }, 300);
             }
 
             // Simulate realistic WASM boot curve
@@ -333,34 +318,36 @@
             ];
 
             let step = 0, startTime = null, startVal = 0;
-
             function animate(ts) {
                 if (step >= schedule.length) return;
                 if (!startTime) { startTime = ts; startVal = current; }
                 const { target, duration } = schedule[step];
                 const t = Math.min((ts - startTime) / duration, 1);
                 setProgress(startVal + (target - startVal) * (1 - (1 - t) * (1 - t)));
-                if (t < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    step++; startTime = null; startVal = current;
-                    if (step < schedule.length) requestAnimationFrame(animate);
-                }
+                if (t < 1) { requestAnimationFrame(animate); }
+                else { step++; startTime = null; startVal = current; if (step < schedule.length) requestAnimationFrame(animate); }
             }
-
             requestAnimationFrame(animate);
 
-            // Hard timeout fallback — if Blazor takes > 30s, dismiss anyway
-            const fallbackTimer = setTimeout(dismissBoot, 30000);
+            // Blazor auto-starts and replaces #app children, naturally removing #ec-boot from DOM.
+            // MutationObserver detects the replacement and clears the stuck-timeout.
+            const app = document.getElementById('app');
+            const stuckTimer = setTimeout(() => {
+                // Still showing after 30s — show error, then force dismiss
+                if (stage) { stage.style.color = '#f43f5e'; stage.textContent = 'LOAD TIMEOUT — CHECK BROWSER CONSOLE'; }
+                if (pct)   { pct.style.color = '#f43f5e'; }
+                setTimeout(() => {
+                    const b = document.getElementById('ec-boot');
+                    if (b) { b.style.transition = 'opacity 400ms'; b.style.opacity = '0'; setTimeout(() => b.style.display = 'none', 420); }
+                }, 5000);
+            }, 30000);
 
-            // Start Blazor manually with autostart="false" — this is the reliable pattern
-            Blazor.start().then(() => {
-                clearTimeout(fallbackTimer);
-                dismissBoot();
-            }).catch(() => {
-                clearTimeout(fallbackTimer);
-                dismissBoot();
-            });
+            if (app) {
+                const obs = new MutationObserver(() => {
+                    if (!document.getElementById('ec-boot')) { clearTimeout(stuckTimer); obs.disconnect(); }
+                });
+                obs.observe(app, { childList: true });
+            }
         })();
     </script>
 </body>

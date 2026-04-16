@@ -23,6 +23,8 @@ builder.Services.AddScoped<IndexedDbService>();
 builder.Services.AddScoped<ModelOrchestrator>();
 builder.Services.AddScoped<ConsolidatorProxy>();
 builder.Services.AddScoped<ReportGenerator>();
+builder.Services.AddScoped<SchemaValidator>();
+builder.Services.AddScoped<ModelWarmupService>();
 builder.Services.AddSingleton<ThemeService>();
 
 await builder.Build().RunAsync();

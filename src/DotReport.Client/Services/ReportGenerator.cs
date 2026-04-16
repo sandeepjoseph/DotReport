@@ -97,7 +97,7 @@ public sealed class ReportGenerator
 
                     foreach (var (field, idx) in doc.ExtractedFields.Select((f, i) => (f, i)))
                     {
-                        var bg = idx % 2 == 0 ? Colors.White : "#f5f5f5";
+                        var bg = idx % 2 == 0 ? "#ffffff" : "#f5f5f5";
                         table.Cell().Background(bg).Padding(4).Text(field.Label.ToUpper()).FontSize(8);
                         table.Cell().Background(bg).Padding(4).Text(field.Value).FontSize(8);
                         table.Cell().Background(bg).Padding(4)

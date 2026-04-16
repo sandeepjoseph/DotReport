@@ -181,12 +181,15 @@
 
         await Babylon.StopDraftingAnimationAsync();
 
-        _result = ParseInferenceOutput(fullText.ToString(), _document);
+        _result = ParseInferenceOutput(fullText.ToString(), _document,
+            Proxy.State.PrimaryStatus == ModelStatus.Ready ? ModelRole.Primary : ModelRole.Backup,
+            Proxy.State.PrimaryExceedsLatencyThreshold);
         _processing = false;
         StateHasChanged();
     }
 
-    private static ReportDocument ParseInferenceOutput(string raw, ReportDocument source)
+    private static ReportDocument ParseInferenceOutput(
+        string raw, ReportDocument source, ModelRole processedBy, bool wasMerged)
     {
         // Simple line-by-line field extraction from model output
         var fields = new List<ExtractedField>();
@@ -224,9 +227,8 @@
             SourceFileName = source.SourceFileName,
             SourceContent  = source.SourceContent,
             ProcessedAt    = DateTimeOffset.UtcNow,
-            ProcessedBy    = Proxy.State.PrimaryStatus == ModelStatus.Ready
-                                 ? ModelRole.Primary : ModelRole.Backup,
-            WasMergedOutput = Proxy.State.PrimaryExceedsLatencyThreshold
+            ProcessedBy     = processedBy,
+            WasMergedOutput = wasMerged
         };
         result.ExtractedFields.AddRange(fields);
         if (analysisLines.Count > 0)
@@ -244,8 +246,8 @@
         _ = DownloadPdfAsync(pdf, _result.SourceFileName);
     }
 
-    [Microsoft.JSInterop.Inject]
-    private Microsoft.JSInterop.IJSRuntime? _js { get; set; }
+    [Inject]
+    private IJSRuntime? _js { get; set; }
 
     private async Task DownloadPdfAsync(byte[] data, string sourceFile)
     {

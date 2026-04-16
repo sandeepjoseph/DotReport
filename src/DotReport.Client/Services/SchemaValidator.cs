@@ -86,18 +86,18 @@ public sealed class SchemaValidator
     /// Builds a "Repair" prompt sent to the Backup model when Primary output is invalid.
     /// </summary>
     public static string BuildRepairPrompt(string brokenOutput, IReadOnlyList<string> issues) =>
-        $"""
+        $$"""
         The following AI output has schema violations. Repair it into valid JSON.
 
         VIOLATIONS:
-        {string.Join("\n", issues.Select(i => $"  - {i}"))}
+        {{string.Join("\n", issues.Select(i => $"  - {i}"))}}
 
         BROKEN OUTPUT:
-        {brokenOutput}
+        {{brokenOutput}}
 
         OUTPUT FORMAT (strict):
         [
-          {{ "label": "FIELD_NAME", "value": "extracted value", "confidence": 0.95 }},
+          { "label": "FIELD_NAME", "value": "extracted value", "confidence": 0.95 },
           ...
         ]
 

@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using DotReport.Client.Interop;
 using DotReport.Client.Models;
 

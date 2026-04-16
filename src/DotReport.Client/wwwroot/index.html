@@ -24,21 +24,68 @@
 </head>
 <body>
     <div id="app">
-        <!-- Loading skeleton (matches dark theme, no spinner — keeps the aesthetic) -->
+        <!-- Boot screen — Kinetic Structuralism execution engine loader -->
         <div id="ec-boot" style="
             position:fixed; inset:0;
             background:#0d0d0d;
             display:flex; flex-direction:column;
             align-items:center; justify-content:center;
-            font-family:'Courier New',monospace; color:#ffffff;">
-            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            font-family:'Courier New',monospace; color:#ffffff;
+            gap:0;">
+
+            <!-- Dodecahedron mark -->
+            <svg width="52" height="52" viewBox="0 0 64 64" fill="none">
                 <polygon points="32,6 58,18 58,46 32,58 6,46 6,18"
                          fill="none" stroke="#ffffff" stroke-width="1.5"/>
                 <polygon points="32,14 50,22 50,42 32,50 14,42 14,22"
-                         fill="none" stroke="#555555" stroke-width="1"/>
+                         fill="none" stroke="#333333" stroke-width="1"/>
             </svg>
-            <div style="margin-top:16px; font-size:11px; letter-spacing:0.2em; color:#888888">
-                DOTREPORT EDGECORE — INITIALIZING
+
+            <!-- Product identity -->
+            <div style="margin-top:18px; font-size:13px; font-weight:bold; letter-spacing:0.22em; color:#ffffff">
+                DOTREPORT / EDGECORE
+            </div>
+            <div style="margin-top:4px; font-size:8px; letter-spacing:0.18em; color:#555555">
+                NET-FORGE DOCUMENT ANALYSIS SYSTEM — REV-2026-A
+            </div>
+
+            <!-- Progress block -->
+            <div style="margin-top:32px; width:340px; display:flex; flex-direction:column; gap:10px;">
+
+                <!-- Bar label row -->
+                <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                    <span style="font-size:8px; letter-spacing:0.18em; color:#888888">
+                        EXECUTION ENGINE LOAD IN PROGRESS
+                    </span>
+                    <span id="ec-pct" style="font-size:9px; font-weight:bold; letter-spacing:0.1em; color:#ffffff">
+                        0%
+                    </span>
+                </div>
+
+                <!-- Segmented progress track -->
+                <div style="position:relative; height:6px; background:#1a1a1a; border:1px solid #333333; overflow:hidden;">
+                    <div id="ec-bar" style="
+                        position:absolute; left:0; top:0; bottom:0; width:0%;
+                        background:#ffffff;
+                        transition:width 280ms linear;"></div>
+                    <!-- Segment ticks overlaid -->
+                    <div style="position:absolute; inset:0; display:flex; justify-content:space-between; pointer-events:none;">
+                        <div style="width:1px; background:#0d0d0d;"></div>
+                        <div style="width:1px; background:#0d0d0d;"></div>
+                        <div style="width:1px; background:#0d0d0d;"></div>
+                        <div style="width:1px; background:#0d0d0d;"></div>
+                        <div style="width:1px; background:#0d0d0d;"></div>
+                        <div style="width:1px; background:#0d0d0d;"></div>
+                        <div style="width:1px; background:#0d0d0d;"></div>
+                        <div style="width:1px; background:#0d0d0d;"></div>
+                        <div style="width:1px; background:#0d0d0d;"></div>
+                    </div>
+                </div>
+
+                <!-- Stage readout -->
+                <div id="ec-stage" style="font-size:8px; letter-spacing:0.14em; color:#555555; min-height:12px;">
+                    LOADING WASM RUNTIME
+                </div>
             </div>
         </div>
     </div>
@@ -54,12 +101,98 @@
     <!-- Blazor WASM bootstrap -->
     <script src="_framework/blazor.webassembly.js"></script>
 
-    <!-- Hide boot screen once Blazor is ready -->
+    <!-- Execution engine load progress animation -->
     <script>
-        Blazor.start().then(() => {
-            const boot = document.getElementById('ec-boot');
-            if (boot) boot.style.display = 'none';
-        });
+        (function () {
+            const bar   = document.getElementById('ec-bar');
+            const pct   = document.getElementById('ec-pct');
+            const stage = document.getElementById('ec-stage');
+
+            const stages = [
+                { at:  0, label: 'LOADING WASM RUNTIME' },
+                { at: 12, label: 'BOOTSTRAPPING .NET CLR' },
+                { at: 25, label: 'RESOLVING ASSEMBLIES' },
+                { at: 38, label: 'INITIALISING INTEROP LAYER' },
+                { at: 52, label: 'BINDING ONNX EXECUTION PROVIDER' },
+                { at: 65, label: 'REGISTERING INFERENCE SERVICES' },
+                { at: 78, label: 'MOUNTING RENDER PIPELINE' },
+                { at: 90, label: 'FINALISING ENGINE STATE' },
+            ];
+
+            let current = 0;
+            let stageIdx = 0;
+
+            function setProgress(value) {
+                current = Math.min(value, 99);
+                if (bar)   bar.style.width = current + '%';
+                if (pct)   pct.textContent = Math.floor(current) + '%';
+                // advance stage label
+                for (let i = stages.length - 1; i >= 0; i--) {
+                    if (current >= stages[i].at) {
+                        if (stageIdx !== i) {
+                            stageIdx = i;
+                            if (stage) stage.textContent = stages[i].label;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // Simulate realistic WASM boot curve:
+            // fast initial burst → slow middle (assembly loading) → burst to 90 → hold for Blazor
+            const schedule = [
+                { target:  8, duration: 180 },
+                { target: 25, duration: 600 },
+                { target: 40, duration: 900 },
+                { target: 55, duration: 700 },
+                { target: 70, duration: 500 },
+                { target: 82, duration: 600 },
+                { target: 90, duration: 800 },
+            ];
+
+            let step = 0;
+            let startTime = null;
+            let startVal  = 0;
+
+            function animate(ts) {
+                if (step >= schedule.length) return;
+                if (!startTime) { startTime = ts; startVal = current; }
+
+                const { target, duration } = schedule[step];
+                const elapsed = ts - startTime;
+                const t = Math.min(elapsed / duration, 1);
+                // ease-out quad
+                const eased = 1 - (1 - t) * (1 - t);
+                setProgress(startVal + (target - startVal) * eased);
+
+                if (t < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    step++;
+                    startTime = null;
+                    startVal  = current;
+                    if (step < schedule.length) requestAnimationFrame(animate);
+                }
+            }
+
+            requestAnimationFrame(animate);
+
+            // When Blazor finishes, slam to 100% and fade out
+            Blazor.start().then(() => {
+                if (bar)   { bar.style.transition = 'width 180ms linear'; bar.style.width = '100%'; }
+                if (pct)   pct.textContent = '100%';
+                if (stage) stage.textContent = 'ENGINE READY';
+
+                setTimeout(() => {
+                    const boot = document.getElementById('ec-boot');
+                    if (boot) {
+                        boot.style.transition = 'opacity 240ms linear';
+                        boot.style.opacity    = '0';
+                        setTimeout(() => { boot.style.display = 'none'; }, 260);
+                    }
+                }, 320);
+            });
+        })();
     </script>
 </body>
 </html>

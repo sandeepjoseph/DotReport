@@ -646,6 +646,62 @@ html, body {
 .ec-shell > .ec-main,
 .ec-shell > footer { position: relative; z-index: 1; }
 
+/* ─── Neon Dot Constellations ───────────────────────────────── */
+/* Four overlapping layers, each a grid of tiny colored dots with
+   prime-number tile sizes — prevents visible repetition at viewport scale.
+   Each dot uses a two-stop radial-gradient: bright core + glow halo.
+   Layers are staggered with individual pulse animations for twinkle. */
+
+@keyframes ec-dots-pulse {
+    0%, 100% { opacity: 0.45; }
+    50%       { opacity: 1.0; }
+}
+
+.ec-geo--dots-a,
+.ec-geo--dots-b,
+.ec-geo--dots-c,
+.ec-geo--dots-d { position: absolute; inset: 0; }
+
+/* Layer A — indigo + cyan dots */
+.ec-geo--dots-a {
+    background-image:
+        radial-gradient(circle, rgba(99,102,241,1) 1px,  rgba(99,102,241,0.18) 2.5px, transparent 3.5px),
+        radial-gradient(circle, rgba(6,182,212,0.95) 1px, rgba(6,182,212,0.14) 2.5px,  transparent 3.5px);
+    background-size:    73px 71px, 97px 89px;
+    background-position: 11px 17px, 41px 53px;
+    animation: ec-dots-pulse 3.8s ease-in-out infinite;
+}
+
+/* Layer B — rose + amber dots */
+.ec-geo--dots-b {
+    background-image:
+        radial-gradient(circle, rgba(244,63,94,0.9) 0.8px, rgba(244,63,94,0.13) 2px,   transparent 3px),
+        radial-gradient(circle, rgba(245,158,11,1) 1px,    rgba(245,158,11,0.15) 2.5px, transparent 3.5px);
+    background-size:    53px 59px, 113px 107px;
+    background-position: 7px 31px, 67px 23px;
+    animation: ec-dots-pulse 3.8s ease-in-out infinite 1.2s;
+}
+
+/* Layer C — white + violet dots (smallest, densest) */
+.ec-geo--dots-c {
+    background-image:
+        radial-gradient(circle, rgba(255,255,255,0.75) 0.6px, rgba(255,255,255,0.08) 1.8px, transparent 2.5px),
+        radial-gradient(circle, rgba(167,139,250,0.9) 0.8px,  rgba(167,139,250,0.1) 2px,    transparent 3px);
+    background-size:    43px 47px, 61px 67px;
+    background-position: 29px 37px, 18px 54px;
+    animation: ec-dots-pulse 3.8s ease-in-out infinite 2.5s;
+}
+
+/* Layer D — teal + rose, sparse large glows */
+.ec-geo--dots-d {
+    background-image:
+        radial-gradient(circle, rgba(20,184,166,0.85) 1px,  rgba(20,184,166,0.1) 3px, transparent 4.5px),
+        radial-gradient(circle, rgba(244,63,94,0.7) 0.8px,  rgba(244,63,94,0.08) 2px, transparent 3px);
+    background-size:    131px 127px, 83px 79px;
+    background-position: 57px 73px, 38px 9px;
+    animation: ec-dots-pulse 3.8s ease-in-out infinite 3.6s;
+}
+
 /* ─── Enhanced Topbar ───────────────────────────────────────── */
 .ec-topbar {
     border-bottom: 1px solid transparent;

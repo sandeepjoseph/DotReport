@@ -5,13 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DotReport EdgeCore</title>
 
-    <!-- ONNX Runtime Web — WebGPU + WASM execution (UAC 7.1) -->
-    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
-
-    <!-- Babylon.js — 3D Kinetic Structuralism engine (UAC 7.3, 7.4) -->
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
-
     <!-- Kinetic Structuralism theme sheets -->
     <link rel="stylesheet" href="css/app.css" />
     <link rel="stylesheet" href="css/theme-dark.css" id="theme-sheet" />
@@ -270,6 +263,11 @@
 
     <!-- Core app interop (file download, drag-drop, theme switching) -->
     <script src="js/app-interop.js"></script>
+
+    <!-- CDN libs moved here so <body> renders first — boot screen shows before these download -->
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 
     <!-- Blazor WASM bootstrap — auto-start (default) -->
     <script src="_framework/blazor.webassembly.js"></script>

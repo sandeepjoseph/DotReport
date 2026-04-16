@@ -1,0 +1,15 @@
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(DotReport.Client.Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>Not Found — DotReport EdgeCore</PageTitle>
+        <LayoutView Layout="@typeof(DotReport.Client.Layout.MainLayout)">
+            <div class="ec-not-found">
+                <span class="ec-label">404</span>
+                <p>Node not mapped.</p>
+            </div>
+        </LayoutView>
+    </NotFound>
+</Router>

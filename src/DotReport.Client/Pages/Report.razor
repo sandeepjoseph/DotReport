@@ -1,0 +1,265 @@
+@page "/report"
+@inject ConsolidatorProxy Proxy
+@inject ReportGenerator PdfGen
+@inject BabylonInterop Babylon
+@inject ThemeService Theme
+@implements IDisposable
+
+<PageTitle>Report Engine — DotReport EdgeCore</PageTitle>
+
+<div class="ec-report">
+    <!-- Left panel: Document uploader + controls -->
+    <aside class="ec-report__sidebar">
+        <div class="ec-sidebar-block">
+            <span class="ec-label">INPUT DOCUMENT</span>
+            <DocumentUploader OnDocumentLoaded="HandleDocumentLoaded" />
+        </div>
+
+        @if (_document is not null)
+        {
+            <div class="ec-sidebar-block">
+                <span class="ec-label">DOCUMENT</span>
+                <div class="ec-doc-meta">
+                    <span class="ec-doc-meta__name">@_document.SourceFileName</span>
+                    <span class="ec-doc-meta__size">@_document.SourceContent.Length chars</span>
+                </div>
+            </div>
+
+            <div class="ec-sidebar-block">
+                <ToggleSwitch Label="CONCURRENT INFERENCE" @bind-Value="_concurrentMode" />
+                <ToggleSwitch Label="TOKEN STREAMING" @bind-Value="_streamMode" />
+            </div>
+
+            <button class="ec-btn ec-btn--primary"
+                    @onclick="ProcessDocument"
+                    disabled="@(_processing || _document is null)">
+                @(_processing ? "PROCESSING" : "ANALYSE DOCUMENT")
+            </button>
+        }
+
+        @if (_result is not null && !_processing)
+        {
+            <button class="ec-btn ec-btn--secondary" @onclick="ExportPdf">
+                EXPORT REPORT PDF
+            </button>
+        }
+
+        <!-- Proxy state indicators -->
+        <div class="ec-proxy-state">
+            <div class="ec-proxy-indicator @(_primaryReady ? "ec-proxy-indicator--ok" : "")">
+                <span class="ec-proxy-indicator__dot"></span>
+                <span>PHI-4 MINI (PRIMARY)</span>
+            </div>
+            <div class="ec-proxy-indicator @(_backupReady ? "ec-proxy-indicator--ok" : "")">
+                <span class="ec-proxy-indicator__dot"></span>
+                <span>QWEN 2.5 (BACKUP)</span>
+            </div>
+            @if (Proxy.State.PrimaryExceedsLatencyThreshold)
+            {
+                <div class="ec-proxy-indicator ec-proxy-indicator--merge">
+                    <span class="ec-proxy-indicator__dot"></span>
+                    <span>MERGE ACTIVE (@Proxy.State.LastPrimaryLatencyMs ms)</span>
+                </div>
+            }
+        </div>
+    </aside>
+
+    <!-- Right panel: Drafting canvas + token stream -->
+    <main class="ec-report__main">
+        <!-- Drafting animation canvas (UAC 7.4) -->
+        <div class="ec-drafting-frame @(_processing ? "ec-drafting-frame--active" : "")">
+            <canvas id="drafting-canvas" class="ec-3d-canvas"></canvas>
+            @if (!_processing)
+            {
+                <div class="ec-drafting-frame__idle">
+                    <span class="ec-label">AWAITING DOCUMENT INPUT</span>
+                </div>
+            }
+        </div>
+
+        <!-- Token stream output -->
+        <div class="ec-token-stream">
+            <div class="ec-token-stream__header">
+                <span class="ec-label">INFERENCE OUTPUT</span>
+                @if (_processing)
+                {
+                    <span class="ec-token-stream__live">LIVE</span>
+                }
+            </div>
+            <div class="ec-token-stream__body" id="token-output">
+                @foreach (var token in _tokens)
+                {
+                    <span class="ec-token">@token</span>
+                }
+                @if (_processing)
+                {
+                    <span class="ec-cursor"></span>
+                }
+            </div>
+        </div>
+
+        <!-- Extracted fields table (post-processing) -->
+        @if (_result is not null && !_processing)
+        {
+            <div class="ec-extracted-fields">
+                <div class="ec-extracted-fields__header">
+                    <span class="ec-label">EXTRACTED FIELDS</span>
+                    <span class="ec-label">@_result.ExtractedFields.Count RECORDS</span>
+                </div>
+                <div class="ec-field-grid">
+                    @foreach (var field in _result.ExtractedFields)
+                    {
+                        <div class="ec-field-row">
+                            <span class="ec-field-row__key">@field.Label.ToUpper()</span>
+                            <span class="ec-field-row__val">@field.Value</span>
+                            <span class="ec-field-row__conf @(field.Confidence >= 0.8f ? "ec-conf--high" : "ec-conf--low")">
+                                @field.Confidence.ToString("P0")
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </main>
+</div>
+
+@code {
+    private ReportDocument? _document;
+    private ReportDocument? _result;
+    private bool _processing;
+    private bool _concurrentMode = true;
+    private bool _streamMode     = true;
+    private bool _primaryReady;
+    private bool _backupReady;
+    private readonly List<string> _tokens = new();
+
+    private const string SystemPrompt =
+        "You are a document analysis engine. Extract key fields from the document. " +
+        "Output structured data: field name, value, confidence (0-1). " +
+        "Then write a brief analysis. Be precise. No conversational filler.";
+
+    protected override void OnInitialized()
+    {
+        _primaryReady = Proxy.State.PrimaryStatus == ModelStatus.Ready;
+        _backupReady  = Proxy.State.BackupStatus  == ModelStatus.Ready;
+        Proxy.OnStateChanged += HandleProxyStateChange;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Babylon.InitSceneAsync("drafting-canvas", Theme.CurrentThemeClass);
+    }
+
+    private void HandleDocumentLoaded(ReportDocument doc)
+    {
+        _document = doc;
+        _result   = null;
+        _tokens.Clear();
+        StateHasChanged();
+    }
+
+    private async Task ProcessDocument()
+    {
+        if (_document is null) return;
+
+        _processing = true;
+        _tokens.Clear();
+        _result = null;
+        StateHasChanged();
+
+        await Babylon.StartDraftingAnimationAsync("drafting-canvas");
+
+        var fullText = new System.Text.StringBuilder();
+        await foreach (var token in Proxy.InferAsync(_document.SourceContent, SystemPrompt))
+        {
+            _tokens.Add(token);
+            fullText.Append(token);
+            StateHasChanged();
+            await Task.Yield(); // allow UI repaint between tokens
+        }
+
+        await Babylon.StopDraftingAnimationAsync();
+
+        _result = ParseInferenceOutput(fullText.ToString(), _document);
+        _processing = false;
+        StateHasChanged();
+    }
+
+    private static ReportDocument ParseInferenceOutput(string raw, ReportDocument source)
+    {
+        // Simple line-by-line field extraction from model output
+        var fields = new List<ExtractedField>();
+        var analysisLines = new List<string>();
+        bool inAnalysis = false;
+
+        foreach (var line in raw.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.StartsWith("ANALYSIS:", StringComparison.OrdinalIgnoreCase))
+            {
+                inAnalysis = true;
+                analysisLines.Add(trimmed[9..].Trim());
+                continue;
+            }
+            if (inAnalysis) { analysisLines.Add(trimmed); continue; }
+
+            // Expect format: "FIELD_NAME | value | 0.95"
+            var parts = trimmed.Split('|');
+            if (parts.Length >= 3 &&
+                float.TryParse(parts[2].Trim(), out float conf))
+            {
+                fields.Add(new ExtractedField
+                {
+                    Label      = parts[0].Trim(),
+                    Value      = parts[1].Trim(),
+                    Confidence = conf
+                });
+            }
+        }
+
+        var result = new ReportDocument
+        {
+            DocumentId    = source.DocumentId,
+            SourceFileName = source.SourceFileName,
+            SourceContent  = source.SourceContent,
+            ProcessedAt    = DateTimeOffset.UtcNow,
+            ProcessedBy    = Proxy.State.PrimaryStatus == ModelStatus.Ready
+                                 ? ModelRole.Primary : ModelRole.Backup,
+            WasMergedOutput = Proxy.State.PrimaryExceedsLatencyThreshold
+        };
+        result.ExtractedFields.AddRange(fields);
+        if (analysisLines.Count > 0)
+            result.Sections[ReportSection.Analysis] = string.Join("\n", analysisLines);
+        result.Sections[ReportSection.Summary] = $"Processed {fields.Count} fields from {source.SourceFileName}.";
+
+        return result;
+    }
+
+    private void ExportPdf()
+    {
+        if (_result is null) return;
+        var pdf = PdfGen.Generate(_result);
+        // Trigger browser download via JS
+        _ = DownloadPdfAsync(pdf, _result.SourceFileName);
+    }
+
+    [Microsoft.JSInterop.Inject]
+    private Microsoft.JSInterop.IJSRuntime? _js { get; set; }
+
+    private async Task DownloadPdfAsync(byte[] data, string sourceFile)
+    {
+        if (_js is null) return;
+        var fileName = $"DotReport_{Path.GetFileNameWithoutExtension(sourceFile)}_{DateTime.UtcNow:yyyyMMdd}.pdf";
+        await _js.InvokeVoidAsync("dotreport.downloadFile", fileName, "application/pdf", data);
+    }
+
+    private void HandleProxyStateChange()
+    {
+        _primaryReady = Proxy.State.PrimaryStatus == ModelStatus.Ready;
+        _backupReady  = Proxy.State.BackupStatus  == ModelStatus.Ready;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => Proxy.OnStateChanged -= HandleProxyStateChange;
+}

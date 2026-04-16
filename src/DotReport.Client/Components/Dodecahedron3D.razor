@@ -1,0 +1,44 @@
+@inject BabylonInterop Babylon
+@inject ThemeService Theme
+@implements IAsyncDisposable
+
+<div class="ec-dodecahedron-wrapper">
+    <canvas id="@_canvasId" class="ec-3d-canvas"></canvas>
+</div>
+
+@code {
+    [Parameter] public int FacesAssembled { get; set; }
+    [Parameter] public bool IsLocked { get; set; }
+    [Parameter] public EventCallback OnLocked { get; set; }
+
+    private readonly string _canvasId = $"dodec-{Guid.NewGuid():N}";
+    private int _lastFaces;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Babylon.InitSceneAsync(_canvasId, Theme.CurrentThemeClass);
+            await Babylon.StartUnfoldAsync();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (FacesAssembled != _lastFaces)
+        {
+            for (int i = _lastFaces + 1; i <= FacesAssembled; i++)
+                await Babylon.AssembleFaceAsync(i);
+            _lastFaces = FacesAssembled;
+        }
+
+        if (IsLocked && _lastFaces >= ProxyState.TotalDodecahedronFaces)
+        {
+            await Babylon.LockDodecahedronAsync();
+            await OnLocked.InvokeAsync();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+        => await Babylon.DisposeAsync();
+}

@@ -1,0 +1,20 @@
+<!-- Chunky physical toggle — 1970s laboratory equipment aesthetic. UAC 7.4 -->
+<div class="ec-phys-toggle" @onclick="Toggle">
+    <div class="ec-phys-toggle__body @(Value ? "ec-phys-toggle__body--on" : "ec-phys-toggle__body--off")">
+        <span class="ec-phys-toggle__lever"></span>
+    </div>
+    <span class="ec-phys-toggle__label">@Label</span>
+    <span class="ec-phys-toggle__state">@(Value ? "ON" : "OFF")</span>
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = string.Empty;
+    [Parameter] public bool Value { get; set; }
+    [Parameter] public EventCallback<bool> ValueChanged { get; set; }
+
+    private async Task Toggle()
+    {
+        Value = !Value;
+        await ValueChanged.InvokeAsync(Value);
+    }
+}

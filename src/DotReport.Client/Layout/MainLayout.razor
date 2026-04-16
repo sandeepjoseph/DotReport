@@ -1,0 +1,30 @@
+@inherits LayoutComponentBase
+@inject ThemeService Theme
+@inject NavigationManager Nav
+
+<div class="ec-shell @Theme.CurrentThemeClass" id="ec-root">
+    <header class="ec-topbar">
+        <div class="ec-topbar__brand">
+            <span class="ec-topbar__serial">DR-01</span>
+            <span class="ec-topbar__name">DotReport EdgeCore</span>
+        </div>
+        <nav class="ec-topbar__nav">
+            <a href="/" class="ec-nav-link @(Nav.Uri.EndsWith("/") ? "ec-nav-link--active" : "")">INDEX</a>
+            <a href="/provision" class="ec-nav-link @(Nav.Uri.Contains("provision") ? "ec-nav-link--active" : "")">PROVISION</a>
+            <a href="/report" class="ec-nav-link @(Nav.Uri.Contains("report") ? "ec-nav-link--active" : "")">REPORT</a>
+        </nav>
+        <div class="ec-topbar__controls">
+            <ModelStatusBar />
+            <ThemeToggle />
+        </div>
+    </header>
+
+    <main class="ec-main">
+        @Body
+    </main>
+
+    <footer class="ec-footer">
+        <span class="ec-footer__stamp">NETFORGE / EDGECORE / REV-2026-A</span>
+        <span class="ec-footer__compute">ALL COMPUTE: CLIENT-SIDE</span>
+    </footer>
+</div>

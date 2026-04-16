@@ -1,0 +1,59 @@
+@using Microsoft.AspNetCore.Components.Forms
+
+<div class="ec-uploader">
+    <label class="ec-uploader__zone @(_dragging ? "ec-uploader__zone--drag" : "")"
+           @ondragover="e => _dragging = true"
+           @ondragleave="e => _dragging = false"
+           @ondrop="HandleDrop">
+        <span class="ec-uploader__icon">▣</span>
+        <span class="ec-uploader__label">DROP DOCUMENT HERE</span>
+        <span class="ec-uploader__sub">TXT / PDF / MD / CSV</span>
+        <InputFile OnChange="HandleFileSelected" accept=".txt,.pdf,.md,.csv" style="display:none" />
+    </label>
+
+    @if (!string.IsNullOrEmpty(_loadedFileName))
+    {
+        <div class="ec-uploader__loaded">
+            <span class="ec-label">LOADED</span>
+            <span class="ec-uploader__filename">@_loadedFileName</span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public EventCallback<ReportDocument> OnDocumentLoaded { get; set; }
+
+    private bool _dragging;
+    private string _loadedFileName = string.Empty;
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file is null) return;
+        await ReadAndNotify(file);
+    }
+
+    private async Task HandleDrop(DragEventArgs e)
+    {
+        _dragging = false;
+        // DragEvent file access requires JS interop in WASM — wired up in app-interop.js
+    }
+
+    private async Task ReadAndNotify(IBrowserFile file)
+    {
+        _loadedFileName = file.Name;
+        using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+        using var reader = new System.IO.StreamReader(stream);
+        var content = await reader.ReadToEndAsync();
+
+        var doc = new ReportDocument
+        {
+            DocumentId     = Guid.NewGuid().ToString("N"),
+            SourceFileName = file.Name,
+            SourceContent  = content
+        };
+
+        await OnDocumentLoaded.InvokeAsync(doc);
+        StateHasChanged();
+    }
+}

@@ -1,0 +1,99 @@
+name: DotReport EdgeCore CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-blazor:
+    name: Build & Publish Blazor WASM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore src/DotReport.sln
+
+      - name: Build solution
+        run: dotnet build src/DotReport.sln --configuration Release --no-restore
+
+      - name: Publish Blazor WASM
+        run: |
+          dotnet publish src/DotReport.Client/DotReport.Client.csproj \
+            --configuration Release \
+            --output ./publish \
+            --no-build
+
+      - name: Upload publish artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blazor-wasm-publish
+          path: ./publish/wwwroot
+          retention-days: 7
+
+  validate-factory:
+    name: Lint Python Model Factory
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install lint tools only (no GPU required in CI)
+        run: pip install flake8 pylint
+
+      - name: Lint factory scripts
+        run: |
+          flake8 factory/ --max-line-length=100 --ignore=E501,W503
+
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    needs: build-blazor
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: blazor-wasm-publish
+          path: ./wwwroot
+
+      - name: Fix Blazor base path for GitHub Pages
+        run: |
+          sed -i 's|<base href="/" />|<base href="/DotReport/" />|g' ./wwwroot/index.html
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./wwwroot
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

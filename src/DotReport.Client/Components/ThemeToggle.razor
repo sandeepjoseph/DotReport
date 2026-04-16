@@ -1,0 +1,21 @@
+@inject ThemeService Theme
+@implements IDisposable
+
+<!-- Physical toggle switch — Theme A (Light) / Theme B (Dark). UAC 7.4 -->
+<div class="ec-theme-toggle" @onclick="Toggle" title="@Theme.CurrentThemeLabel">
+    <div class="ec-toggle-track @(Theme.IsDark ? "ec-toggle-track--dark" : "ec-toggle-track--light")">
+        <span class="ec-toggle-label ec-toggle-label--left">ARCHIVE</span>
+        <div class="ec-toggle-thumb"></div>
+        <span class="ec-toggle-label ec-toggle-label--right">MONOLITH</span>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+        => Theme.OnThemeChanged += StateHasChanged;
+
+    private void Toggle() => Theme.Toggle();
+
+    public void Dispose()
+        => Theme.OnThemeChanged -= StateHasChanged;
+}

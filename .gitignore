@@ -1,32 +1,56 @@
-# Dependencies
-node_modules/
-.pnp/
-.pnp.js
+# ── .NET / Blazor ─────────────────────────────────────────────
+bin/
+obj/
+publish/
+*.user
+*.suo
+.vs/
+TestResults/
 
-# Environment
+# ── Python Factory ────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+
+# ── Model Artifacts (large binary files — never commit) ───────
+factory/output/
+src/DotReport.Client/wwwroot/models/*/model*.onnx
+src/DotReport.Client/wwwroot/models/*/model*.bin
+# Manifests & tokenizers CAN be committed (small JSON/text)
+
+# ── Environment & Secrets ─────────────────────────────────────
 .env
 .env.local
 .env.*.local
 
-# Build outputs
-dist/
-build/
-out/
-
-# OS files
+# ── OS Files ──────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
-
-# IDE
-.vscode/
-.idea/
 *.swp
 *.swo
 
-# Logs
+# ── IDE ───────────────────────────────────────────────────────
+.idea/
+*.suo
+*.user
+
+# ── Logs ──────────────────────────────────────────────────────
 logs/
 *.log
 npm-debug.log*
 
-# Misc
+# ── Node (if tooling added later) ─────────────────────────────
+node_modules/
+.pnp/
+.pnp.js
+
+# ── Misc ──────────────────────────────────────────────────────
 *.cache

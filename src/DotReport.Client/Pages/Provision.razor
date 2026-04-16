@@ -1,0 +1,193 @@
+@page "/provision"
+@inject ModelOrchestrator Orchestrator
+@inject ConsolidatorProxy Proxy
+@inject BabylonInterop Babylon
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject ThemeService Theme
+
+<PageTitle>Provision — DotReport EdgeCore</PageTitle>
+
+<div class="ec-provision">
+    <div class="ec-provision__header">
+        <span class="ec-label">PROVISIONING SEQUENCE</span>
+        <span class="ec-provision__status-text">@_statusText</span>
+    </div>
+
+    <!-- 3D Dodecahedron scene (UAC 7.3) -->
+    <div class="ec-dodecahedron-frame" id="dodecahedron-frame">
+        <canvas id="dodecahedron-canvas" class="ec-3d-canvas"></canvas>
+        <div class="ec-dodecahedron-overlay">
+            <span class="ec-label">FACES ASSEMBLED</span>
+            <span class="ec-face-counter">@_facesAssembled / 12</span>
+        </div>
+    </div>
+
+    <!-- Progress rail -->
+    <div class="ec-provision-rails">
+        <!-- Primary model rail -->
+        <div class="ec-rail">
+            <div class="ec-rail__header">
+                <span class="ec-rail__name">PHI-4 MINI <span class="ec-label">PRIMARY</span></span>
+                <span class="ec-rail__status @GetStatusClass(_primaryStatus)">@_primaryStatus.ToString().ToUpper()</span>
+            </div>
+            <div class="ec-rail__bar">
+                <div class="ec-rail__fill" style="width: @(_primaryProgress)%"></div>
+            </div>
+            <div class="ec-rail__meta">3.8B PARAMS / 4-BIT ONNX / ~3.8 GB VRAM</div>
+        </div>
+
+        <!-- Backup model rail -->
+        <div class="ec-rail">
+            <div class="ec-rail__header">
+                <span class="ec-rail__name">QWEN 2.5 <span class="ec-label">BACKUP</span></span>
+                <span class="ec-rail__status @GetStatusClass(_backupStatus)">@_backupStatus.ToString().ToUpper()</span>
+            </div>
+            <div class="ec-rail__bar">
+                <div class="ec-rail__fill" style="width: @(_backupProgress)%"></div>
+            </div>
+            <div class="ec-rail__meta">1.5B PARAMS / 4-BIT ONNX / ~1.4 GB VRAM</div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="ec-provision-controls">
+        @if (!_provisioning && !_provisioned)
+        {
+            <button class="ec-btn ec-btn--primary" @onclick="StartProvision">
+                BEGIN PROVISIONING
+            </button>
+        }
+        else if (_provisioning)
+        {
+            <button class="ec-btn ec-btn--ghost" disabled>
+                ASSEMBLING @_facesAssembled / 12 FACES
+            </button>
+        }
+        else if (_provisioned)
+        {
+            <!-- The "Play" button is only enabled when fully assembled. UAC 7.3 -->
+            <button class="ec-btn ec-btn--primary ec-btn--locked" @onclick="ProceedToReport">
+                LOCKED &amp; READY — OPEN REPORT ENGINE
+            </button>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="ec-error-panel">
+            <span class="ec-label">ERROR</span>
+            <p>@_errorMessage</p>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _provisioning;
+    private bool _provisioned;
+    private int  _facesAssembled;
+    private string _statusText     = "AWAITING INITIATION";
+    private string? _errorMessage;
+
+    private ModelStatus _primaryStatus = ModelStatus.Unloaded;
+    private ModelStatus _backupStatus  = ModelStatus.Unloaded;
+    private int _primaryProgress;
+    private int _backupProgress;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Babylon.InitSceneAsync("dodecahedron-canvas", Theme.CurrentThemeClass);
+        await Babylon.StartUnfoldAsync();
+    }
+
+    private async Task StartProvision()
+    {
+        _provisioning = true;
+        _errorMessage = null;
+        _statusText   = "INITIALIZING FACTORY PIPELINE";
+        StateHasChanged();
+
+        Orchestrator.OnStatusChanged += HandleStatusChanged;
+        Orchestrator.OnSegmentCached += HandleSegmentCached;
+
+        try
+        {
+            _statusText = "DOWNLOADING PHI-4 MINI";
+            StateHasChanged();
+            await Orchestrator.ProvisionModelAsync(ModelConfig.Phi4Mini, Http);
+
+            _statusText = "DOWNLOADING QWEN 2.5";
+            StateHasChanged();
+            await Orchestrator.ProvisionModelAsync(ModelConfig.Qwen25, Http);
+
+            _statusText = "LOADING INTO ONNX RUNTIME";
+            StateHasChanged();
+            await Orchestrator.LoadModelAsync(ModelConfig.Phi4Mini);
+            await Orchestrator.LoadModelAsync(ModelConfig.Qwen25);
+
+            await Babylon.LockDodecahedronAsync();
+
+            _provisioned  = true;
+            _provisioning = false;
+            _statusText   = "ASSEMBLY COMPLETE — ENGINE LOCKED";
+            Proxy.State.ProvisioningFacesAssembled = ProxyState.TotalDodecahedronFaces;
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+            _provisioning = false;
+            _statusText   = "PROVISIONING FAILED";
+        }
+        finally
+        {
+            Orchestrator.OnStatusChanged -= HandleStatusChanged;
+            Orchestrator.OnSegmentCached -= HandleSegmentCached;
+            StateHasChanged();
+        }
+    }
+
+    private Task HandleStatusChanged(ModelConfig config, ModelStatus status)
+    {
+        if (config.Role == ModelRole.Primary)
+        {
+            _primaryStatus   = status;
+            _primaryProgress = StatusToProgress(status);
+        }
+        else
+        {
+            _backupStatus   = status;
+            _backupProgress = StatusToProgress(status);
+        }
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleSegmentCached(ModelConfig config, int faceIndex)
+    {
+        _facesAssembled = Math.Max(_facesAssembled, faceIndex);
+        await Babylon.AssembleFaceAsync(faceIndex);
+        StateHasChanged();
+    }
+
+    private static int StatusToProgress(ModelStatus s) => s switch
+    {
+        ModelStatus.Unloaded    => 0,
+        ModelStatus.Downloading => 40,
+        ModelStatus.Cached      => 65,
+        ModelStatus.Loading     => 85,
+        ModelStatus.Ready       => 100,
+        _                       => 0
+    };
+
+    private static string GetStatusClass(ModelStatus s) => s switch
+    {
+        ModelStatus.Ready       => "ec-rail__status--ok",
+        ModelStatus.Error       => "ec-rail__status--error",
+        ModelStatus.Downloading => "ec-rail__status--active",
+        ModelStatus.Loading     => "ec-rail__status--active",
+        _                       => ""
+    };
+
+    private void ProceedToReport() => Nav.NavigateTo("/report");
+}

@@ -1,0 +1,125 @@
+@page "/"
+@inject NavigationManager Nav
+@inject ConsolidatorProxy Proxy
+@inject ThemeService Theme
+@inject VRAMDetector VramDetector
+
+<PageTitle>DotReport EdgeCore</PageTitle>
+
+<div class="ec-index">
+    <!-- Hero block -->
+    <section class="ec-hero">
+        <div class="ec-hero__stamp">NETFORGE / REV-2026-A</div>
+        <h1 class="ec-hero__title">DOTREPORT<br/><span class="ec-hero__subtitle">EDGECORE</span></h1>
+        <p class="ec-hero__spec">
+            DOCUMENT ANALYSIS ENGINE — ALL COMPUTE ON DEVICE
+        </p>
+        <div class="ec-hero__rule"></div>
+        <p class="ec-hero__description">
+            Dual-model inference proxy running entirely in your browser's GPU.
+            Zero server compute. Zero data transmission. Sovereign by design.
+        </p>
+    </section>
+
+    <!-- Capability readout -->
+    <section class="ec-capability-panel">
+        <div class="ec-capability-panel__header">
+            <span class="ec-label">DEVICE ASSESSMENT</span>
+        </div>
+        @if (_caps is not null)
+        {
+            <div class="ec-capability-grid">
+                <div class="ec-cap-item @(_caps.WebGpuSupported ? "ec-cap-item--ok" : "ec-cap-item--warn")">
+                    <span class="ec-cap-item__key">WEBGPU</span>
+                    <span class="ec-cap-item__val">@(_caps.WebGpuSupported ? "AVAILABLE" : "UNAVAILABLE")</span>
+                </div>
+                <div class="ec-cap-item ec-cap-item--ok">
+                    <span class="ec-cap-item__key">WASM</span>
+                    <span class="ec-cap-item__val">@(_caps.WebAssemblySupported ? "AVAILABLE" : "UNAVAILABLE")</span>
+                </div>
+                <div class="ec-cap-item @(_caps.HasSufficientVram ? "ec-cap-item--ok" : "ec-cap-item--warn")">
+                    <span class="ec-cap-item__key">VRAM</span>
+                    <span class="ec-cap-item__val">@(_caps.EstimatedVramMb) MB</span>
+                </div>
+                <div class="ec-cap-item">
+                    <span class="ec-cap-item__key">BUILD</span>
+                    <span class="ec-cap-item__val">@_caps.RecommendedBuild.ToString().ToUpper()</span>
+                </div>
+                <div class="ec-cap-item ec-cap-item--wide">
+                    <span class="ec-cap-item__key">ADAPTER</span>
+                    <span class="ec-cap-item__val">@_caps.AdapterName</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="ec-scanning">
+                <span class="ec-scanning__dot"></span>
+                <span class="ec-scanning__dot"></span>
+                <span class="ec-scanning__dot"></span>
+                <span class="ec-scanning__label">SCANNING DEVICE</span>
+            </div>
+        }
+    </section>
+
+    <!-- Action block -->
+    <section class="ec-action-block">
+        @if (!Proxy.State.IsFullyProvisioned)
+        {
+            <button class="ec-btn ec-btn--primary" @onclick="GoProvision">
+                PROVISION ENGINE
+            </button>
+            <p class="ec-action-block__note">
+                One-time download — models cached locally after first run.
+            </p>
+        }
+        else
+        {
+            <button class="ec-btn ec-btn--primary" @onclick="GoReport">
+                OPEN DOCUMENT
+            </button>
+            <p class="ec-action-block__note ec-action-block__note--ok">
+                ENGINE READY — ALL SYSTEMS NOMINAL
+            </p>
+        }
+    </section>
+
+    <!-- Spec table -->
+    <section class="ec-spec-table">
+        <div class="ec-spec-row ec-spec-row--header">
+            <span>COMPONENT</span><span>SPECIFICATION</span><span>UAC</span>
+        </div>
+        <div class="ec-spec-row">
+            <span>Primary Model</span><span>Phi-4 Mini 4-bit ONNX</span><span>7.2</span>
+        </div>
+        <div class="ec-spec-row">
+            <span>Backup Model</span><span>Qwen 2.5 1.5B 4-bit ONNX</span><span>7.2</span>
+        </div>
+        <div class="ec-spec-row">
+            <span>Inference Backend</span><span>ONNX Runtime Web / WebGPU</span><span>7.1</span>
+        </div>
+        <div class="ec-spec-row">
+            <span>3D Engine</span><span>Babylon.js — Kinetic Structuralism</span><span>7.3</span>
+        </div>
+        <div class="ec-spec-row">
+            <span>Report Output</span><span>QuestPDF (.NET 9 / WASM)</span><span>7.5</span>
+        </div>
+        <div class="ec-spec-row">
+            <span>Server Compute</span><span>ZERO — 100% Client GPU</span><span>7.1</span>
+        </div>
+    </section>
+</div>
+
+@code {
+    private DeviceCapabilities? _caps;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _caps = await VramDetector.DetectAsync();
+        StateHasChanged();
+    }
+
+    private void GoProvision() => Nav.NavigateTo("/provision");
+    private void GoReport()    => Nav.NavigateTo("/report");
+}

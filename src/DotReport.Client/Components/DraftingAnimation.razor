@@ -1,0 +1,39 @@
+@inject BabylonInterop Babylon
+@inject ThemeService Theme
+@implements IAsyncDisposable
+
+<!-- Technical Drafting Animation — UAC 7.4 (no chatbot bubbles, no sparkles) -->
+<div class="ec-drafting-wrapper @(IsActive ? "ec-drafting-wrapper--active" : "")">
+    <canvas id="@_canvasId" class="ec-3d-canvas"></canvas>
+    @if (!IsActive)
+    {
+        <div class="ec-drafting-idle">
+            <div class="ec-drafting-idle__grid"></div>
+            <span class="ec-label">DRAFTING TABLE IDLE</span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public bool IsActive { get; set; }
+
+    private readonly string _canvasId = $"draft-{Guid.NewGuid():N}";
+    private bool _wasActive;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await Babylon.InitSceneAsync(_canvasId, Theme.CurrentThemeClass);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsActive && !_wasActive)
+            await Babylon.StartDraftingAnimationAsync(_canvasId);
+        else if (!IsActive && _wasActive)
+            await Babylon.StopDraftingAnimationAsync();
+        _wasActive = IsActive;
+    }
+
+    public async ValueTask DisposeAsync() => await Babylon.DisposeAsync();
+}

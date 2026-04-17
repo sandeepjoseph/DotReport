@@ -1382,3 +1382,90 @@ html, body {
 @media (max-width: 768px) {
     .ec-agent-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Provision: Recommendation Panel ─────────────────────────────────────── */
+.ec-recommendation-panel {
+  background: var(--ec-surface-2, #1a1a2e);
+  border: 1px solid var(--ec-border, rgba(255,255,255,0.08));
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin: 0 auto 24px;
+  max-width: 700px;
+}
+.ec-recommendation-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.ec-recommendation-panel__reason {
+  font-size: 0.85rem;
+  opacity: 0.75;
+  margin: 0 0 18px;
+  line-height: 1.5;
+}
+
+/* ── Model Slots ─────────────────────────────────────────────────────────── */
+.ec-model-slots {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 560px) {
+  .ec-model-slots { grid-template-columns: 1fr; }
+}
+.ec-model-slot__label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.5;
+  margin-bottom: 8px;
+}
+.ec-model-slot__options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── Slot Buttons ─────────────────────────────────────────────────────────── */
+.ec-slot-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 14px;
+  border-radius: 7px;
+  border: 1px solid var(--ec-border, rgba(255,255,255,0.1));
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+}
+.ec-slot-btn:hover:not(:disabled) {
+  border-color: var(--ec-accent, #f59e0b);
+  background: rgba(245,158,11,0.06);
+}
+.ec-slot-btn--selected {
+  border-color: var(--ec-accent, #f59e0b) !important;
+  background: rgba(245,158,11,0.10) !important;
+}
+.ec-slot-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.ec-slot-btn__name {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.ec-slot-btn__meta {
+  font-size: 0.74rem;
+  opacity: 0.55;
+}
+.ec-slot-btn__rec {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ec-accent, #f59e0b);
+  margin-top: 2px;
+}

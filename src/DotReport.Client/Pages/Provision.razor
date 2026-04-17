@@ -5,6 +5,7 @@
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject ThemeService Theme
+@inject VRAMDetector VramDetector
 
 <PageTitle>Provision — DotReport EdgeCore</PageTitle>
 
@@ -24,29 +25,114 @@
         </div>
     </div>
 
+    <!-- Model Recommendation -->
+    @if (!_provisioning && !_provisioned)
+    {
+        <div class="ec-recommendation-panel">
+            <div class="ec-recommendation-panel__header">
+                <span class="ec-label">Hardware Analysis</span>
+                @if (_caps is null)
+                {
+                    <span class="ec-scanning__label" style="font-size:0.78rem">Scanning device…</span>
+                }
+                else
+                {
+                    <span style="font-size:0.78rem;opacity:0.7">@_caps.AdapterName · @(_caps.EstimatedVramMb) MB VRAM · WebGPU @(_caps.WebGpuSupported ? "✓" : "✗")</span>
+                }
+            </div>
+
+            @if (_caps is not null)
+            {
+                <p class="ec-recommendation-panel__reason">@_recommendationReason</p>
+
+                <div class="ec-model-slots">
+                    <!-- Primary slot -->
+                    <div class="ec-model-slot">
+                        <div class="ec-model-slot__label">Primary Model</div>
+                        <div class="ec-model-slot__options">
+                            <button class="ec-slot-btn @(_primaryConfig?.Id == ModelConfig.Phi4Mini.Id ? "ec-slot-btn--selected" : "")"
+                                    @onclick="SelectPhi4Primary" disabled="@(!_caps.WebGpuSupported)">
+                                <span class="ec-slot-btn__name">Phi-4 Mini</span>
+                                <span class="ec-slot-btn__meta">~3 800 MB · Complex logic</span>
+                                @if (_recommendedPrimary?.Id == ModelConfig.Phi4Mini.Id)
+                                { <span class="ec-slot-btn__rec">Recommended</span> }
+                            </button>
+                            <button class="ec-slot-btn @(_primaryConfig?.Id == ModelConfig.Qwen25.Id ? "ec-slot-btn--selected" : "")"
+                                    @onclick="SelectQwen25Primary">
+                                <span class="ec-slot-btn__name">Qwen 2.5</span>
+                                <span class="ec-slot-btn__meta">~1 400 MB · Fast inference</span>
+                                @if (_recommendedPrimary?.Id == ModelConfig.Qwen25.Id)
+                                { <span class="ec-slot-btn__rec">Recommended</span> }
+                            </button>
+                            <button class="ec-slot-btn @(_primaryConfig is null ? "ec-slot-btn--selected" : "")"
+                                    @onclick="ClearPrimary">
+                                <span class="ec-slot-btn__name">None</span>
+                                <span class="ec-slot-btn__meta">Skip — use built-in</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Secondary slot -->
+                    <div class="ec-model-slot">
+                        <div class="ec-model-slot__label">Secondary Model</div>
+                        <div class="ec-model-slot__options">
+                            <button class="ec-slot-btn @(_backupConfig?.Id == ModelConfig.Phi4Mini.Id ? "ec-slot-btn--selected" : "")"
+                                    @onclick="SelectPhi4Backup"
+                                    disabled="@(_primaryConfig?.Id == ModelConfig.Phi4Mini.Id || !_caps.WebGpuSupported)">
+                                <span class="ec-slot-btn__name">Phi-4 Mini</span>
+                                <span class="ec-slot-btn__meta">~3 800 MB · Complex logic</span>
+                                @if (_recommendedBackup?.Id == ModelConfig.Phi4Mini.Id)
+                                { <span class="ec-slot-btn__rec">Recommended</span> }
+                            </button>
+                            <button class="ec-slot-btn @(_backupConfig?.Id == ModelConfig.Qwen25.Id ? "ec-slot-btn--selected" : "")"
+                                    @onclick="SelectQwen25Backup"
+                                    disabled="@(_primaryConfig?.Id == ModelConfig.Qwen25.Id)">
+                                <span class="ec-slot-btn__name">Qwen 2.5</span>
+                                <span class="ec-slot-btn__meta">~1 400 MB · Fast inference</span>
+                                @if (_recommendedBackup?.Id == ModelConfig.Qwen25.Id)
+                                { <span class="ec-slot-btn__rec">Recommended</span> }
+                            </button>
+                            <button class="ec-slot-btn @(_backupConfig is null ? "ec-slot-btn--selected" : "")"
+                                    @onclick="ClearBackup">
+                                <span class="ec-slot-btn__name">None</span>
+                                <span class="ec-slot-btn__meta">No redundancy</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
     <!-- Progress rails -->
     <div class="ec-provision-rails">
-        <div class="ec-rail">
-            <div class="ec-rail__header">
-                <span class="ec-rail__name">@ModelConfig.Phi4Mini.DisplayName <span class="ec-label">AI Agent 2 · Primary</span></span>
-                <span class="ec-rail__status @GetStatusClass(_primaryStatus)">@_primaryStatus.ToString().ToUpper()</span>
+        @if (_primaryConfig is not null || _provisioning || _provisioned)
+        {
+            <div class="ec-rail">
+                <div class="ec-rail__header">
+                    <span class="ec-rail__name">@(_primaryConfig?.DisplayName ?? ModelConfig.Phi4Mini.DisplayName) <span class="ec-label">AI Agent 2 · Primary</span></span>
+                    <span class="ec-rail__status @GetStatusClass(_primaryStatus)">@_primaryStatus.ToString().ToUpper()</span>
+                </div>
+                <div class="ec-rail__bar">
+                    <div class="ec-rail__fill" style="width: @(_primaryProgress)%"></div>
+                </div>
+                <div class="ec-rail__meta">@(_primaryConfig?.Description ?? ModelConfig.Phi4Mini.Description) · ~@(_primaryConfig?.EstimatedVramMb ?? ModelConfig.Phi4Mini.EstimatedVramMb) MB VRAM</div>
             </div>
-            <div class="ec-rail__bar">
-                <div class="ec-rail__fill" style="width: @(_primaryProgress)%"></div>
-            </div>
-            <div class="ec-rail__meta">@ModelConfig.Phi4Mini.Description · WebGPU Accelerated · ~@(ModelConfig.Phi4Mini.EstimatedVramMb) MB VRAM</div>
-        </div>
+        }
 
-        <div class="ec-rail">
-            <div class="ec-rail__header">
-                <span class="ec-rail__name">@ModelConfig.Qwen25.DisplayName <span class="ec-label">AI Agent 2 · Backup</span></span>
-                <span class="ec-rail__status @GetStatusClass(_backupStatus)">@_backupStatus.ToString().ToUpper()</span>
+        @if (_backupConfig is not null || _provisioning || _provisioned)
+        {
+            <div class="ec-rail">
+                <div class="ec-rail__header">
+                    <span class="ec-rail__name">@(_backupConfig?.DisplayName ?? ModelConfig.Qwen25.DisplayName) <span class="ec-label">AI Agent 2 · Backup</span></span>
+                    <span class="ec-rail__status @GetStatusClass(_backupStatus)">@_backupStatus.ToString().ToUpper()</span>
+                </div>
+                <div class="ec-rail__bar">
+                    <div class="ec-rail__fill" style="width: @(_backupProgress)%"></div>
+                </div>
+                <div class="ec-rail__meta">@(_backupConfig?.Description ?? ModelConfig.Qwen25.Description) · ~@(_backupConfig?.EstimatedVramMb ?? ModelConfig.Qwen25.EstimatedVramMb) MB VRAM</div>
             </div>
-            <div class="ec-rail__bar">
-                <div class="ec-rail__fill" style="width: @(_backupProgress)%"></div>
-            </div>
-            <div class="ec-rail__meta">@ModelConfig.Qwen25.Description · Low-VRAM · ~@(ModelConfig.Qwen25.EstimatedVramMb) MB VRAM</div>
-        </div>
+        }
     </div>
 
     <!-- Skip notice -->
@@ -65,8 +151,12 @@
     <div class="ec-provision-controls">
         @if (!_provisioning && !_provisioned)
         {
-            <button class="ec-btn ec-btn--ghost" @onclick="StartProvision">
-                Load Local AI Models (optional)
+            <button class="ec-btn ec-btn--ghost" @onclick="StartProvision"
+                    disabled="@(_primaryConfig is null && _backupConfig is null)">
+                @if (_primaryConfig is null && _backupConfig is null)
+                { <span>Select at least one model above</span> }
+                else
+                { <span>Load Selected Models (optional)</span> }
             </button>
         }
         else if (_provisioning)
@@ -105,16 +195,74 @@
     private int _primaryProgress;
     private int _backupProgress;
 
+    private DeviceCapabilities? _caps;
+    private ModelConfig? _primaryConfig;
+    private ModelConfig? _backupConfig;
+    private ModelConfig? _recommendedPrimary;
+    private ModelConfig? _recommendedBackup;
+    private string _recommendationReason = string.Empty;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
+
+        try { await Babylon.InitSceneAsync("dodecahedron-canvas", Theme.CurrentThemeClass); await Babylon.StartUnfoldAsync(); }
+        catch { }
+
         try
         {
-            await Babylon.InitSceneAsync("dodecahedron-canvas", Theme.CurrentThemeClass);
-            await Babylon.StartUnfoldAsync();
+            _caps = await VramDetector.DetectAsync();
+            ApplyRecommendation(_caps);
         }
-        catch { /* Babylon.js CDN may not be ready — 3D scene is non-critical */ }
+        catch { }
+
+        StateHasChanged();
     }
+
+    private void ApplyRecommendation(DeviceCapabilities caps)
+    {
+        bool canRunPhi4  = caps.WebGpuSupported && caps.EstimatedVramMb >= ModelConfig.Phi4Mini.EstimatedVramMb;
+        bool canRunQwen  = caps.EstimatedVramMb >= ModelConfig.Qwen25.EstimatedVramMb;
+        bool canRunBoth  = canRunPhi4 && caps.EstimatedVramMb >= (ModelConfig.Phi4Mini.EstimatedVramMb + ModelConfig.Qwen25.EstimatedVramMb);
+
+        if (canRunPhi4)
+        {
+            _recommendedPrimary = ModelConfig.Phi4Mini;
+            _recommendedBackup  = canRunBoth ? ModelConfig.Qwen25 : null;
+            _recommendationReason = canRunBoth
+                ? $"Your device can run both models ({caps.EstimatedVramMb} MB VRAM, WebGPU available). Phi-4 Mini recommended as primary for highest accuracy."
+                : $"Your device can run Phi-4 Mini ({caps.EstimatedVramMb} MB VRAM). Secondary model skipped to stay within VRAM budget.";
+        }
+        else if (canRunQwen)
+        {
+            _recommendedPrimary = ModelConfig.Qwen25;
+            _recommendedBackup  = null;
+            _recommendationReason = caps.WebGpuSupported
+                ? $"Your device has {caps.EstimatedVramMb} MB VRAM — within range for Qwen 2.5. Phi-4 Mini requires ~{ModelConfig.Phi4Mini.EstimatedVramMb} MB and is not recommended."
+                : $"WebGPU is unavailable on this device. Qwen 2.5 can run in CPU-fallback mode. Phi-4 Mini requires WebGPU.";
+        }
+        else
+        {
+            _recommendedPrimary = null;
+            _recommendedBackup  = null;
+            _recommendationReason = $"Your device has {caps.EstimatedVramMb} MB estimated VRAM. Local models may not run reliably — the built-in engine (AI Agent 3) is recommended for this hardware.";
+        }
+
+        _primaryConfig = _recommendedPrimary;
+        _backupConfig  = _recommendedBackup;
+    }
+
+    // ── Override handlers ─────────────────────────────────────────────────────
+
+    private void SelectPhi4Primary()  { _primaryConfig = ModelConfig.Phi4Mini; if (_backupConfig?.Id == ModelConfig.Phi4Mini.Id) _backupConfig = null; }
+    private void SelectQwen25Primary() { _primaryConfig = ModelConfig.Qwen25;  if (_backupConfig?.Id == ModelConfig.Qwen25.Id)  _backupConfig = null; }
+    private void ClearPrimary()        { _primaryConfig = null; }
+
+    private void SelectPhi4Backup()   { _backupConfig = ModelConfig.Phi4Mini; }
+    private void SelectQwen25Backup()  { _backupConfig = ModelConfig.Qwen25; }
+    private void ClearBackup()         { _backupConfig = null; }
+
+    // ── Provisioning ─────────────────────────────────────────────────────────
 
     private async Task StartProvision()
     {
@@ -128,18 +276,21 @@
 
         try
         {
-            _statusText = "Initialising primary layer";
-            StateHasChanged();
-            await Orchestrator.ProvisionModelAsync(ModelConfig.Phi4Mini, Http);
+            if (_primaryConfig is not null)
+            {
+                _statusText = $"Initialising primary layer — {_primaryConfig.DisplayName}";
+                StateHasChanged();
+                await Orchestrator.ProvisionModelAsync(_primaryConfig, Http);
+                await Orchestrator.LoadModelAsync(_primaryConfig);
+            }
 
-            _statusText = "Initialising backup layer";
-            StateHasChanged();
-            await Orchestrator.ProvisionModelAsync(ModelConfig.Qwen25, Http);
-
-            _statusText = "Binding inference provider";
-            StateHasChanged();
-            await Orchestrator.LoadModelAsync(ModelConfig.Phi4Mini);
-            await Orchestrator.LoadModelAsync(ModelConfig.Qwen25);
+            if (_backupConfig is not null)
+            {
+                _statusText = $"Initialising backup layer — {_backupConfig.DisplayName}";
+                StateHasChanged();
+                await Orchestrator.ProvisionModelAsync(_backupConfig, Http);
+                await Orchestrator.LoadModelAsync(_backupConfig);
+            }
 
             try { await Babylon.LockDodecahedronAsync(); } catch { }
 
@@ -164,7 +315,8 @@
 
     private Task HandleStatusChanged(ModelConfig config, ModelStatus status)
     {
-        if (config.Role == ModelRole.Primary)
+        bool isPrimary = config.Id == (_primaryConfig?.Id ?? ModelConfig.Phi4Mini.Id);
+        if (isPrimary)
         {
             _primaryStatus            = status;
             _primaryProgress          = StatusToProgress(status);

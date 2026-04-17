@@ -28,13 +28,21 @@
 
                 @foreach (var doc in KB.Documents)
                 {
-                    <div class="ec-doc-card @(_activeSources.Contains(doc.FileName) ? "ec-doc-card--active" : "")">
+                    <div class="ec-doc-card @(_activeSources.Contains(doc.FileName) ? "ec-doc-card--active" : "") @(doc.ChunkCount == 0 ? "ec-doc-card--warn" : "")">
                         <div class="ec-doc-card__body">
                             <span class="ec-type-chip ec-type-chip--@TypeClass(doc.FileType)">@doc.FileType</span>
                             <span class="ec-doc-card__name" title="@doc.FileName">@Truncate(doc.FileName, 26)</span>
                         </div>
                         <div class="ec-doc-card__meta">
                             <span>@FormatSize(doc.CharCount)</span>
+                            @if (doc.ChunkCount == 0)
+                            {
+                                <span class="ec-doc-card__chunks ec-doc-card__chunks--empty" title="No text could be extracted from this file">⚠ 0 chunks</span>
+                            }
+                            else
+                            {
+                                <span class="ec-doc-card__chunks">@doc.ChunkCount chunks</span>
+                            }
                             <button class="ec-btn-icon ec-btn-icon--sm" @onclick="() => RemoveDoc(doc.Id)">✕</button>
                         </div>
                     </div>
@@ -84,6 +92,19 @@
                                 <span class="ec-cursor"></span>
                             }
                         </div>
+                        @if (msg.Role == ChatRole.Assistant && !msg.IsStreaming && msg.RetrievedFragments >= 0)
+                        {
+                            @if (msg.RetrievedFragments == 0)
+                            {
+                                <div class="ec-retrieval-warn">
+                                    ⚠ 0 fragments retrieved — no matching content found in indexed documents. Try rephrasing or check that files were parsed correctly (chunk count above).
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="ec-retrieval-info">@msg.RetrievedFragments fragment@(msg.RetrievedFragments != 1 ? "s" : "") retrieved</div>
+                            }
+                        }
                         @if (msg.SourceDocuments.Count > 0)
                         {
                             <div class="ec-msg__sources">
@@ -147,10 +168,11 @@
 @code {
     private readonly List<ChatMessage> _messages      = new();
     private readonly HashSet<string>   _activeSources = new();
-    private string  _input     = string.Empty;
+    private string  _input          = string.Empty;
     private bool    _thinking;
     private string? _chatError;
     private int     _tokenCount;
+    private int     _lastRetrieved;   // fragments found by last BM25 search
 
     private static readonly (string Label, string Query)[] QuickPrompts =
     {
@@ -231,6 +253,7 @@
 
         // RAG: find relevant chunks
         var results = KB.Search(userQuery, topN: 4);
+        _lastRetrieved = results.Count;
         var sources = KnowledgeBase.SourcesFrom(results);
         var context = KB.BuildContext(userQuery, topN: 4);
 
@@ -242,11 +265,12 @@
         // Create streaming message
         var reply = new ChatMessage
         {
-            Id              = Guid.NewGuid().ToString("N"),
-            Role            = ChatRole.Assistant,
-            Content         = string.Empty,
-            IsStreaming     = true,
-            SourceDocuments = sources,
+            Id                 = Guid.NewGuid().ToString("N"),
+            Role               = ChatRole.Assistant,
+            Content            = string.Empty,
+            IsStreaming        = true,
+            SourceDocuments    = sources,
+            RetrievedFragments = _lastRetrieved,
         };
         _messages.Add(reply);
         StateHasChanged();

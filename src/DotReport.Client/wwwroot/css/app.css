@@ -1469,3 +1469,33 @@ html, body {
   color: var(--ec-accent, #f59e0b);
   margin-top: 2px;
 }
+
+/* ── Ingestion diagnostics ───────────────────────────────────────────────── */
+.ec-doc-card--warn {
+  border-color: #f59e0b !important;
+  background: rgba(245,158,11,0.06) !important;
+}
+.ec-doc-card__chunks {
+  font-size: 0.72rem;
+  opacity: 0.5;
+}
+.ec-doc-card__chunks--empty {
+  color: #f59e0b;
+  opacity: 1;
+  font-weight: 600;
+}
+.ec-retrieval-info {
+  font-size: 0.72rem;
+  opacity: 0.45;
+  margin-top: 4px;
+}
+.ec-retrieval-warn {
+  font-size: 0.78rem;
+  color: #f59e0b;
+  background: rgba(245,158,11,0.08);
+  border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 6px;
+  line-height: 1.5;
+}

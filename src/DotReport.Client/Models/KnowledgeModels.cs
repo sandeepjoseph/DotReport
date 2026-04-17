@@ -40,5 +40,6 @@ public sealed class ChatMessage
     public string Content   { get; set; } = string.Empty;
     public bool   IsStreaming { get; set; }
     public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.UtcNow;
-    public List<string> SourceDocuments { get; init; } = new();
+    public List<string> SourceDocuments  { get; init; } = new();
+    public int          RetrievedFragments { get; set; } = -1; // -1 = no retrieval (user msg / system msg)
 }

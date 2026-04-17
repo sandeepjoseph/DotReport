@@ -294,6 +294,20 @@
             reply.SourceDocuments.Clear();
             reply.SourceDocuments.AddRange(sources);
         }
+        catch (HttpRequestException hx) when (
+            hx.StatusCode is System.Net.HttpStatusCode.MethodNotAllowed
+                          or System.Net.HttpStatusCode.NotFound
+                          or System.Net.HttpStatusCode.Forbidden)
+        {
+            // Tier1 was selected but the endpoint doesn't exist on this host.
+            // The circuit breaker has now opened Tier1's circuit immediately.
+            // Silently retry — next SelectBackendAsync call will go straight to Tier3.
+            reply.IsStreaming = false;
+            _messages.Remove(reply);
+            StateHasChanged();
+            await RunInferenceAsync(userQuery);
+            return;
+        }
         catch (Exception ex)
         {
             _chatError     = ex.Message;

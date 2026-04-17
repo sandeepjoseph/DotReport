@@ -26,12 +26,17 @@ public sealed class ServerProxyBackend : IInferenceBackend
     {
         try
         {
-            using var resp = await _http.GetAsync(
-                HealthPath, HttpCompletionOption.ResponseHeadersRead, ct);
-            // Must be JSON — a 200 returning index.html (SPA fallback) is not a real proxy
-            var ct2 = resp.Content.Headers.ContentType?.MediaType ?? string.Empty;
+            // Cache-bust so stale browser/proxy caches don't hide the real content-type
+            var url = $"{HealthPath}?_={Environment.TickCount64}";
+            using var req  = new HttpRequestMessage(HttpMethod.Get, url);
+            req.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { NoCache = true };
+            using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+
+            // Must return application/json — any other type (e.g. text/html SPA fallback) means
+            // there is no real server proxy, and we must not attempt POST /api/inference/stream.
+            var mediaType = resp.Content.Headers.ContentType?.MediaType ?? string.Empty;
             _lastAvailable = resp.IsSuccessStatusCode &&
-                             ct2.Contains("json", StringComparison.OrdinalIgnoreCase);
+                             mediaType.Contains("json", StringComparison.OrdinalIgnoreCase);
         }
         catch { _lastAvailable = false; }
         return _lastAvailable;

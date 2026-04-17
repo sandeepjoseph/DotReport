@@ -28,24 +28,24 @@
     <div class="ec-provision-rails">
         <div class="ec-rail">
             <div class="ec-rail__header">
-                <span class="ec-rail__name">XyOPST Custom AI <span class="ec-label">Primary</span></span>
+                <span class="ec-rail__name">@ModelConfig.Phi4Mini.DisplayName <span class="ec-label">AI Agent 2 · Primary</span></span>
                 <span class="ec-rail__status @GetStatusClass(_primaryStatus)">@_primaryStatus.ToString().ToUpper()</span>
             </div>
             <div class="ec-rail__bar">
                 <div class="ec-rail__fill" style="width: @(_primaryProgress)%"></div>
             </div>
-            <div class="ec-rail__meta">Primary Processing Layer · Edge-optimised · WebGPU Accelerated</div>
+            <div class="ec-rail__meta">@ModelConfig.Phi4Mini.Description · WebGPU Accelerated · ~@(ModelConfig.Phi4Mini.EstimatedVramMb) MB VRAM</div>
         </div>
 
         <div class="ec-rail">
             <div class="ec-rail__header">
-                <span class="ec-rail__name">XyOPST Custom AI <span class="ec-label">Backup</span></span>
+                <span class="ec-rail__name">@ModelConfig.Qwen25.DisplayName <span class="ec-label">AI Agent 2 · Backup</span></span>
                 <span class="ec-rail__status @GetStatusClass(_backupStatus)">@_backupStatus.ToString().ToUpper()</span>
             </div>
             <div class="ec-rail__bar">
                 <div class="ec-rail__fill" style="width: @(_backupProgress)%"></div>
             </div>
-            <div class="ec-rail__meta">Redundancy Layer · Latency-adaptive · Low-VRAM Fallback</div>
+            <div class="ec-rail__meta">@ModelConfig.Qwen25.Description · Low-VRAM · ~@(ModelConfig.Qwen25.EstimatedVramMb) MB VRAM</div>
         </div>
     </div>
 

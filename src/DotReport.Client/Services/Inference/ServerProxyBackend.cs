@@ -28,7 +28,10 @@ public sealed class ServerProxyBackend : IInferenceBackend
         {
             using var resp = await _http.GetAsync(
                 HealthPath, HttpCompletionOption.ResponseHeadersRead, ct);
-            _lastAvailable = resp.IsSuccessStatusCode;
+            // Must be JSON — a 200 returning index.html (SPA fallback) is not a real proxy
+            var ct2 = resp.Content.Headers.ContentType?.MediaType ?? string.Empty;
+            _lastAvailable = resp.IsSuccessStatusCode &&
+                             ct2.Contains("json", StringComparison.OrdinalIgnoreCase);
         }
         catch { _lastAvailable = false; }
         return _lastAvailable;

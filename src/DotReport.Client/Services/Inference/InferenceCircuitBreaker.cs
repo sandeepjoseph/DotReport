@@ -49,6 +49,22 @@ public sealed class InferenceCircuitBreaker
             _breakers[b.Tier] = new BreakerEntry();
     }
 
+    /// <summary>
+    /// Resets all circuit breakers and re-probes every backend.
+    /// Call this when the user explicitly requests a status refresh.
+    /// </summary>
+    public async Task RefreshAsync(CancellationToken ct = default)
+    {
+        foreach (var entry in _breakers.Values)
+        {
+            entry.State    = CircuitState.Closed;
+            entry.Failures = 0;
+        }
+        var best  = await SelectBackendAsync(ct);
+        ActiveTier = best.Tier;
+        ActiveName = best.Name;
+    }
+
     public async IAsyncEnumerable<string> StreamAsync(
         BackendRequest request,
         [EnumeratorCancellation] CancellationToken ct = default)

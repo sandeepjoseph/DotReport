@@ -1,6 +1,7 @@
 @page "/"
 @inject NavigationManager Nav
 @inject ConsolidatorProxy Proxy
+@inject InferenceCircuitBreaker Breaker
 @inject ThemeService Theme
 @inject VRAMDetector VramDetector
 
@@ -26,6 +27,49 @@
             </button>
         </div>
         <span class="ec-hero__note">No setup required · built-in engine ready · upload and ask anything</span>
+    </section>
+
+    <!-- AI Engine Status -->
+    <section class="ec-device-panel">
+        <div class="ec-device-panel__header">
+            <div class="ec-device-panel__title">AI Engine Status</div>
+            <button class="ec-btn ec-btn--ghost ec-btn--sm" @onclick="RefreshEngines" disabled="@_refreshing">
+                @if (_refreshing)
+                {
+                    <span class="ec-scanning__dot" style="display:inline-block;margin-right:6px"></span>
+                    <span>Checking…</span>
+                }
+                else
+                {
+                    <span>↺ Refresh</span>
+                }
+            </button>
+        </div>
+
+        <div class="ec-agent-grid">
+            @foreach (var agent in Breaker.GetAgentInfos())
+            {
+                <div class="ec-agent-card @(agent.IsReady ? "ec-agent-card--ready" : "ec-agent-card--idle")
+                                          @(agent.IsActive ? "ec-agent-card--active" : "")">
+                    <div class="ec-agent-card__header">
+                        <span class="ec-agent-card__led"></span>
+                        <span class="ec-agent-card__label">@agent.AgentLabel</span>
+                        <span class="ec-agent-card__badge">
+                            @if (agent.IsActive)      { <span>ACTIVE</span> }
+                            else if (agent.IsReady)   { <span>READY</span>  }
+                            else                      { <span>STANDBY</span>}
+                        </span>
+                    </div>
+                    <div class="ec-agent-card__name">@agent.BackendName</div>
+                    <div class="ec-agent-card__tier">Tier @((int)agent.Tier)</div>
+                </div>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(_refreshMessage))
+        {
+            <p class="ec-agent-refresh-msg">@_refreshMessage</p>
+        }
     </section>
 
     <!-- Features -->
@@ -102,21 +146,41 @@
 
 @code {
     private DeviceCapabilities? _caps;
+    private bool    _refreshing;
+    private string? _refreshMessage;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        try
-        {
-            _caps = await VramDetector.DetectAsync();
-        }
-        catch
-        {
-            // VRAM detection is best-effort.
-        }
+        try { _caps = await VramDetector.DetectAsync(); } catch { }
         StateHasChanged();
     }
 
-    private void GoChat()      => Nav.NavigateTo("/chat");
-    private void GoReport()    => Nav.NavigateTo("/report");
+    private async Task RefreshEngines()
+    {
+        _refreshing     = true;
+        _refreshMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            await Breaker.RefreshAsync();
+            var active = Breaker.GetAgentInfos().FirstOrDefault(a => a.IsActive);
+            _refreshMessage = active is not null
+                ? $"Active engine: {active.AgentLabel} — {active.BackendName}"
+                : "Engine check complete.";
+        }
+        catch (Exception ex)
+        {
+            _refreshMessage = $"Refresh failed: {ex.Message}";
+        }
+        finally
+        {
+            _refreshing = false;
+            StateHasChanged();
+        }
+    }
+
+    private void GoChat()   => Nav.NavigateTo("/chat");
+    private void GoReport() => Nav.NavigateTo("/report");
 }

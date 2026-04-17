@@ -1260,3 +1260,125 @@ html, body {
     0%, 100% { opacity: 1; transform: scale(1); }
     50%       { opacity: 0.3; transform: scale(0.7); }
 }
+
+/* ════════════════════════════════════════════════════════
+   AI ENGINE STATUS — HOME PAGE CARDS
+════════════════════════════════════════════════════════ */
+
+.ec-device-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+.ec-device-panel__header .ec-device-panel__title { margin-bottom: 0; }
+
+.ec-btn--sm {
+    padding: 4px 12px;
+    font-size: 11px;
+    height: auto;
+}
+
+.ec-agent-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.ec-agent-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    background: var(--surface);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+
+.ec-agent-card__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.ec-agent-card__led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    opacity: 0.35;
+    flex-shrink: 0;
+}
+
+.ec-agent-card__label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    flex: 1;
+}
+
+.ec-agent-card__badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: var(--border);
+    color: var(--text-muted);
+}
+
+.ec-agent-card__name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.ec-agent-card__tier {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+}
+
+/* Ready state */
+.ec-agent-card--ready {
+    border-color: rgba(16,185,129,0.3);
+}
+.ec-agent-card--ready .ec-agent-card__led {
+    background: #10b981;
+    opacity: 1;
+    box-shadow: 0 0 6px rgba(16,185,129,0.5);
+}
+.ec-agent-card--ready .ec-agent-card__label { color: #10b981; }
+.ec-agent-card--ready .ec-agent-card__badge {
+    background: rgba(16,185,129,0.15);
+    color: #10b981;
+}
+
+/* Active state */
+.ec-agent-card--active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent), 0 4px 16px rgba(0,0,0,0.12);
+}
+.ec-agent-card--active .ec-agent-card__led {
+    background: var(--accent);
+    opacity: 1;
+    box-shadow: 0 0 8px var(--accent);
+}
+.ec-agent-card--active .ec-agent-card__label { color: var(--accent); }
+.ec-agent-card--active .ec-agent-card__badge {
+    background: rgba(245,158,11,0.15);
+    color: var(--accent);
+}
+
+.ec-agent-refresh-msg {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    margin: 4px 0 0;
+}
+
+@media (max-width: 768px) {
+    .ec-agent-grid { grid-template-columns: 1fr; }
+}

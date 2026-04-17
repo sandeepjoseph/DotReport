@@ -54,3 +54,6 @@ node_modules/
 
 # ── Misc ──────────────────────────────────────────────────────
 *.cache
+
+# ── GitHub Actions (requires workflow token scope to push) ────
+.github/

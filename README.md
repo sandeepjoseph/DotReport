@@ -134,4 +134,4 @@ src/
 
 ## License
 
-MIT © 2026 XyOPST Intelligence
+Proprietary — All rights reserved. This software is the intellectual property of XyOPST Inc.

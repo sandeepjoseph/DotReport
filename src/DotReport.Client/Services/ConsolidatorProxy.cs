@@ -1,34 +1,31 @@
 using System.Runtime.CompilerServices;
 using DotReport.Client.Models;
+using DotReport.Client.Services.Inference;
 
 namespace DotReport.Client.Services;
 
 /// <summary>
-/// The Consolidator Proxy — manages the dual-model lifecycle.
-/// Runs Primary (Phi-4 Mini) and Backup (Qwen 2.5) concurrently.
-/// If Primary exceeds 500ms token-latency, Backup output is merged
-/// so the user never encounters a "Thinking" hang. UAC 7.2.
+/// Inference entry point for the application.
+/// Delegates to InferenceCircuitBreaker which tries backends in tier order:
+///   Tier1 → Cloud LLM via server proxy (highest quality)
+///   Tier2 → Local ONNX model (requires provisioning)
+///   Tier3 → Built-in rule engine (always available — guaranteed)
+/// ProxyState is preserved for backward compatibility with Provision and Report pages.
 /// </summary>
 public sealed class ConsolidatorProxy
 {
-    private const int LatencyThresholdMs = 500;
-
-    private readonly ModelOrchestrator _orchestrator;
+    private readonly InferenceCircuitBreaker _breaker;
     private readonly ProxyState _state;
 
     public ProxyState State => _state;
     public event Action? OnStateChanged;
 
-    public ConsolidatorProxy(ModelOrchestrator orchestrator)
+    public ConsolidatorProxy(InferenceCircuitBreaker breaker)
     {
-        _orchestrator = orchestrator;
-        _state = new ProxyState();
+        _breaker = breaker;
+        _state   = new ProxyState();
     }
 
-    /// <summary>
-    /// Fires both models concurrently. Returns a merged stream of tokens.
-    /// Backup provides immediate feedback; Primary refines the final output.
-    /// </summary>
     public async IAsyncEnumerable<string> InferAsync(
         string userContent,
         string systemPrompt,
@@ -37,90 +34,20 @@ public sealed class ConsolidatorProxy
         _state.IsProcessing = true;
         NotifyStateChanged();
 
-        var requestId = Guid.NewGuid().ToString("N");
-        var primaryRequest = BuildRequest(requestId + "-p", userContent, systemPrompt, ModelRole.Primary);
-        var backupRequest  = BuildRequest(requestId + "-b", userContent, systemPrompt, ModelRole.Backup);
+        var request = new BackendRequest(userContent, systemPrompt);
 
-        using var primaryCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        using var backupCts  = CancellationTokenSource.CreateLinkedTokenSource(ct);
-
-        // Channel-based merge: whichever produces tokens first wins immediate display.
-        var channel = System.Threading.Channels.Channel.CreateUnbounded<string>();
-        var primaryResponse = new InferenceResponse { RequestId = primaryRequest.RequestId, SourceModel = ModelRole.Primary };
-        var backupResponse  = new InferenceResponse { RequestId = backupRequest.RequestId,  SourceModel = ModelRole.Backup  };
-
-        var primaryTask = RunModelAsync(primaryRequest, primaryResponse, channel.Writer, primaryCts.Token);
-        var backupTask  = RunModelAsync(backupRequest,  backupResponse,  channel.Writer, backupCts.Token);
-
-        // Latency watchdog: if primary stalls, merge backup immediately.
-        var watchdogTask = Task.Run(async () =>
-        {
-            await Task.Delay(LatencyThresholdMs, ct);
-            if (primaryResponse.Status == InferenceStatus.Pending ||
-                primaryResponse.Status == InferenceStatus.Streaming &&
-                primaryResponse.TokenLatencyMs > LatencyThresholdMs)
-            {
-                _state.LastPrimaryLatencyMs = primaryResponse.TokenLatencyMs;
-                primaryResponse.WasMerged = true;
-                NotifyStateChanged();
-            }
-        }, ct);
-
-        _ = Task.WhenAll(primaryTask, backupTask, watchdogTask)
-               .ContinueWith(_ => channel.Writer.TryComplete(), ct);
-
-        await foreach (var token in channel.Reader.ReadAllAsync(ct))
-            yield return token;
-
-        _state.IsProcessing = false;
-        NotifyStateChanged();
-    }
-
-    private async Task RunModelAsync(
-        InferenceRequest request,
-        InferenceResponse response,
-        System.Threading.Channels.ChannelWriter<string> writer,
-        CancellationToken ct)
-    {
         try
         {
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            response.Status = InferenceStatus.Streaming;
-
-            await foreach (var token in _orchestrator.StreamAsync(request, ct))
-            {
-                response.TokenLatencyMs = sw.ElapsedMilliseconds;
-                response.TokensGenerated++;
-                response.Text += token;
-
-                // Only write to channel if this is the active source
-                if (!response.WasMerged)
-                    await writer.WriteAsync(token, ct);
-            }
-
-            sw.Stop();
-            response.Status = InferenceStatus.Complete;
-            response.CompletedAt = DateTimeOffset.UtcNow;
+            await foreach (var token in _breaker.StreamAsync(request, ct))
+                yield return token;
         }
-        catch (OperationCanceledException) { /* graceful cancel */ }
-        catch (Exception ex)
+        finally
         {
-            response.Status = InferenceStatus.Failed;
-            response.ErrorMessage = ex.Message;
+            _state.IsProcessing     = false;
+            _state.LastPrimaryLatencyMs = 0;
+            NotifyStateChanged();
         }
     }
-
-    private static InferenceRequest BuildRequest(
-        string id, string content, string system, ModelRole role) => new()
-    {
-        RequestId = id,
-        Prompt = content,
-        SystemPrompt = system,
-        TargetModel = role,
-        StreamTokens = true,
-        MaxTokens = 512,
-        Temperature = role == ModelRole.Primary ? 0.1f : 0.3f
-    };
 
     private void NotifyStateChanged() => OnStateChanged?.Invoke();
 }

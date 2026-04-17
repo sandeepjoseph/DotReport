@@ -1,0 +1,418 @@
+@page "/chat"
+@inject KnowledgeBase KB
+@inject ConsolidatorProxy Proxy
+@inject CrossDocIntelligenceService CrossDoc
+@inject ReportGenerator PdfGen
+@inject IJSRuntime JS
+@implements IDisposable
+
+<PageTitle>Intelligence Chat — DotReport EdgeCore</PageTitle>
+
+<div class="ec-chat @(KB.HasDocuments ? "" : "ec-chat--empty")">
+
+    <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
+    <aside class="ec-chat__sidebar">
+
+        <div class="ec-sidebar-block">
+            <span class="ec-label">KNOWLEDGE BASE</span>
+            <MultiFileUploader OnFileParsed="HandleFileParsed" />
+        </div>
+
+        @if (KB.HasDocuments)
+        {
+            <div class="ec-sidebar-block ec-doc-list">
+                <div class="ec-doc-list__header">
+                    <span class="ec-label">@KB.Documents.Count DOC@(KB.Documents.Count != 1 ? "S" : "") · @KB.TotalChunks CHUNKS</span>
+                    <button class="ec-btn-icon" title="Clear all" @onclick="ClearAll">✕</button>
+                </div>
+
+                @foreach (var doc in KB.Documents)
+                {
+                    <div class="ec-doc-card @(_activeSources.Contains(doc.FileName) ? "ec-doc-card--active" : "")">
+                        <div class="ec-doc-card__body">
+                            <span class="ec-type-chip ec-type-chip--@TypeClass(doc.FileType)">@doc.FileType</span>
+                            <span class="ec-doc-card__name" title="@doc.FileName">@Truncate(doc.FileName, 26)</span>
+                        </div>
+                        <div class="ec-doc-card__meta">
+                            <span>@FormatSize(doc.CharCount)</span>
+                            <button class="ec-btn-icon ec-btn-icon--sm" @onclick="() => RemoveDoc(doc.Id)">✕</button>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Privacy shield -->
+            <div class="ec-shield">
+                <span class="ec-shield__dot"></span>
+                <span class="ec-shield__label">ALL PROCESSING LOCAL · NO DATA TRANSMITTED</span>
+            </div>
+        }
+    </aside>
+
+    <!-- ── Main chat area ───────────────────────────────────────────────── -->
+    <main class="ec-chat__main">
+
+        @if (!KB.HasDocuments)
+        {
+            <div class="ec-chat__empty-state">
+                <span class="ec-chat__empty-icon">⬆</span>
+                <p class="ec-chat__empty-title">Upload your documents to begin</p>
+                <p class="ec-chat__empty-sub">Drop PDFs, spreadsheets, Word documents, or text files into the panel on the left. Then ask anything.</p>
+            </div>
+        }
+        else
+        {
+            <!-- Quick actions -->
+            <div class="ec-quick-actions">
+                @foreach (var prompt in QuickPrompts)
+                {
+                    <button class="ec-quick-chip" @onclick="() => SendQuick(prompt.Query)">
+                        @prompt.Label
+                    </button>
+                }
+            </div>
+
+            <!-- Message thread -->
+            <div class="ec-thread" id="ec-chat-thread">
+                @foreach (var msg in _messages)
+                {
+                    <div class="ec-msg ec-msg--@(msg.Role == ChatRole.User ? "user" : "assistant")">
+                        <div class="ec-msg__bubble">
+                            <pre class="ec-msg__text">@msg.Content@(msg.IsStreaming ? "" : "")</pre>
+                            @if (msg.IsStreaming)
+                            {
+                                <span class="ec-cursor"></span>
+                            }
+                        </div>
+                        @if (msg.SourceDocuments.Count > 0)
+                        {
+                            <div class="ec-msg__sources">
+                                @foreach (var src in msg.SourceDocuments)
+                                {
+                                    <span class="ec-src-chip">@Truncate(src, 24)</span>
+                                }
+                            </div>
+                        }
+                        @if (!msg.IsStreaming && msg.Role == ChatRole.Assistant && IsReport(msg.Content))
+                        {
+                            <button class="ec-btn ec-btn--secondary ec-export-btn"
+                                    @onclick="() => ExportReportAsync(msg.Content)">
+                                Export as PDF
+                            </button>
+                        }
+                    </div>
+                }
+
+                @if (_thinking && _messages.LastOrDefault()?.Role != ChatRole.Assistant)
+                {
+                    <div class="ec-msg ec-msg--assistant">
+                        <div class="ec-msg__bubble ec-msg__bubble--thinking">
+                            <span class="ec-scanning__dot"></span>
+                            <span class="ec-scanning__dot"></span>
+                            <span class="ec-scanning__dot"></span>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Input area -->
+            <div class="ec-chat__input-area">
+                @if (!string.IsNullOrEmpty(_chatError))
+                {
+                    <div class="ec-error-panel" style="margin-bottom:8px">
+                        <span class="ec-label">Error</span>
+                        <p>@_chatError</p>
+                    </div>
+                }
+                <div class="ec-chat__input-row">
+                    <textarea class="ec-chat__textarea"
+                              placeholder="Ask anything about your documents… or type 'build report' for a formatted report"
+                              rows="2"
+                              @bind="_input"
+                              @bind:event="oninput"
+                              @onkeydown="HandleKeyDown"
+                              disabled="@_thinking" />
+                    <button class="ec-btn ec-btn--primary ec-chat__send"
+                            @onclick="Send"
+                            disabled="@(_thinking || string.IsNullOrWhiteSpace(_input))">
+                        @(_thinking ? "…" : "Send")
+                    </button>
+                </div>
+            </div>
+        }
+    </main>
+
+</div>
+
+@code {
+    private readonly List<ChatMessage> _messages      = new();
+    private readonly HashSet<string>   _activeSources = new();
+    private string  _input     = string.Empty;
+    private bool    _thinking;
+    private string? _chatError;
+    private int     _tokenCount;
+
+    private static readonly (string Label, string Query)[] QuickPrompts =
+    {
+        ("Summarise all documents",     "Give me a brief summary of each uploaded document."),
+        ("Extract all totals",          "Find and list all monetary amounts, totals, and figures mentioned across all documents."),
+        ("Find dates and deadlines",    "List all dates, due dates, and deadlines found in the documents."),
+        ("Cross-document comparison",   "Compare the information across different documents. Are there any matching or conflicting figures?"),
+        ("Build a report",              "Build a structured report from all uploaded documents. Include key fields, totals, and a summary. Start your response with REPORT: on its own line."),
+    };
+
+    protected override void OnInitialized()
+        => KB.OnChanged += OnKbChanged;
+
+    private void OnKbChanged()
+        => InvokeAsync(StateHasChanged);
+
+    private void HandleFileParsed((string FileName, string Content) e)
+    {
+        KB.AddDocument(e.FileName, e.Content);
+
+        if (_messages.Count == 0)
+        {
+            _messages.Add(new ChatMessage
+            {
+                Id      = Guid.NewGuid().ToString("N"),
+                Role    = ChatRole.Assistant,
+                Content = $"Loaded \"{e.FileName}\" ({KB.TotalChunks} chunks indexed). Ask me anything about your documents, or upload more files.",
+            });
+        }
+        else
+        {
+            _messages.Add(new ChatMessage
+            {
+                Id      = Guid.NewGuid().ToString("N"),
+                Role    = ChatRole.Assistant,
+                Content = $"Added \"{e.FileName}\". Knowledge base now has {KB.Documents.Count} documents · {KB.TotalChunks} chunks.",
+            });
+        }
+
+        StateHasChanged();
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey && !_thinking && !string.IsNullOrWhiteSpace(_input))
+            _ = Send();
+    }
+
+    private async Task Send()
+    {
+        var text = _input.Trim();
+        if (string.IsNullOrWhiteSpace(text) || _thinking) return;
+
+        _input     = string.Empty;
+        _chatError = null;
+        _activeSources.Clear();
+
+        _messages.Add(new ChatMessage
+        {
+            Id      = Guid.NewGuid().ToString("N"),
+            Role    = ChatRole.User,
+            Content = text,
+        });
+
+        await RunInferenceAsync(text);
+    }
+
+    private async Task SendQuick(string query)
+    {
+        _input = query;
+        await Send();
+    }
+
+    private async Task RunInferenceAsync(string userQuery)
+    {
+        _thinking = true;
+        StateHasChanged();
+
+        // RAG: find relevant chunks
+        var results = KB.Search(userQuery, topN: 4);
+        var sources = KnowledgeBase.SourcesFrom(results);
+        var context = KB.BuildContext(userQuery, topN: 4);
+
+        // Cross-document intelligence (runs when 2+ docs are loaded)
+        CrossDocReport? crossDoc = KB.Documents.Count >= 2 ? CrossDoc.Analyze(KB) : null;
+
+        var systemPrompt = BuildSystemPrompt(context, crossDoc);
+
+        // Create streaming message
+        var reply = new ChatMessage
+        {
+            Id              = Guid.NewGuid().ToString("N"),
+            Role            = ChatRole.Assistant,
+            Content         = string.Empty,
+            IsStreaming     = true,
+            SourceDocuments = sources,
+        };
+        _messages.Add(reply);
+        StateHasChanged();
+
+        try
+        {
+            _tokenCount = 0;
+            await foreach (var token in Proxy.InferAsync(userQuery, systemPrompt))
+            {
+                reply.Content += token;
+                _tokenCount++;
+                StateHasChanged();
+                await Task.Yield();
+                // Scroll every 15 tokens — smooth without hammering JS interop
+                if (_tokenCount % 15 == 0)
+                    await JS.InvokeVoidAsync("dotreport.scrollToBottom", "ec-chat-thread");
+            }
+
+            // Highlight source documents in the sidebar
+            foreach (var src in sources) _activeSources.Add(src);
+            reply.SourceDocuments.Clear();
+            reply.SourceDocuments.AddRange(sources);
+        }
+        catch (Exception ex)
+        {
+            _chatError     = ex.Message;
+            reply.Content += $"\n[Error: {ex.Message}]";
+        }
+        finally
+        {
+            reply.IsStreaming = false;
+            _thinking         = false;
+            StateHasChanged();
+        }
+    }
+
+    private string BuildSystemPrompt(string context, CrossDocReport? crossDoc = null)
+    {
+        var docList = string.Join(", ", KB.Documents.Select(d => $"{d.FileName} ({d.FileType})"));
+        var prompt =
+            "You are an intelligent document analyst with access to the user's uploaded documents.\n\n" +
+            $"LOADED DOCUMENTS: {docList}\n\n" +
+            $"RELEVANT CONTEXT FOR THIS QUERY:\n{context}\n\n";
+
+        if (crossDoc is { HasInsights: true })
+        {
+            prompt +=
+                "CROSS-DOCUMENT INTELLIGENCE:\n" +
+                $"Summary: {crossDoc.Summary}\n";
+
+            if (crossDoc.MatchingAmounts.Count > 0)
+            {
+                prompt += "Matching amounts across documents:\n";
+                foreach (var m in crossDoc.MatchingAmounts.Take(5))
+                    prompt += $"  {m.Formatted} — in \"{m.DocA}\" and \"{m.DocB}\"\n";
+            }
+            if (crossDoc.Discrepancies.Count > 0)
+            {
+                prompt += "Potential discrepancies:\n";
+                foreach (var d in crossDoc.Discrepancies.Take(5))
+                    prompt += $"  {d.Formatted} — \"{d.DocA}\" vs \"{d.DocB}\"\n";
+            }
+            if (crossDoc.DateClusters.Count > 0)
+            {
+                prompt += "Shared dates:\n";
+                foreach (var c in crossDoc.DateClusters.Take(5))
+                    prompt += $"  {c.NormalizedDate} — {string.Join(", ", c.DocumentNames)}\n";
+            }
+            prompt += "\n";
+        }
+
+        prompt +=
+            "RULES:\n" +
+            "- Answer ONLY from the provided context above\n" +
+            "- Cite your sources inline: (Source: filename)\n" +
+            "- Be precise with numbers, dates, and names\n" +
+            "- If asked to build or generate a report: begin your response with REPORT: on its own line,\n" +
+            "  then write the full structured report. For each data field use the format:\n" +
+            "  FIELD_NAME | value | confidence_0_to_1\n" +
+            "- If you cannot find the answer in the context, say so clearly";
+
+        return prompt;
+    }
+
+    private async Task ExportReportAsync(string content)
+    {
+        try
+        {
+            var text = content.TrimStart();
+            if (text.StartsWith("REPORT:", StringComparison.OrdinalIgnoreCase))
+                text = text[7..].TrimStart();
+
+            var doc = new ReportDocument
+            {
+                DocumentId     = Guid.NewGuid().ToString("N"),
+                SourceFileName = "Chat-Generated-Report",
+                SourceContent  = text,
+                ProcessedBy    = ModelRole.Primary,
+                WasMergedOutput = false,
+            };
+
+            // Extract any LABEL | value | confidence lines
+            foreach (var line in text.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var parts = line.Split('|');
+                if (parts.Length >= 3 && float.TryParse(parts[2].Trim(), System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out float conf))
+                {
+                    doc.ExtractedFields.Add(new ExtractedField
+                    {
+                        Label      = parts[0].Trim(),
+                        Value      = parts[1].Trim(),
+                        Confidence = conf,
+                    });
+                }
+            }
+
+            var sources = string.Join(", ", KB.Documents.Select(d => d.FileName));
+            doc.Sections[ReportSection.Analysis] = text;
+            doc.Sections[ReportSection.Summary]  =
+                $"Report generated from {KB.Documents.Count} document(s): {sources}";
+
+            var pdf      = PdfGen.Generate(doc);
+            var fileName = $"DotReport_Chat_{DateTime.UtcNow:yyyyMMdd_HHmm}.pdf";
+            await JS.InvokeVoidAsync("dotreport.downloadFile", fileName, "application/pdf", pdf);
+        }
+        catch (Exception ex)
+        {
+            _chatError = $"PDF export failed: {ex.Message}";
+            StateHasChanged();
+        }
+    }
+
+    private void ClearAll()
+    {
+        KB.Clear();
+        _messages.Clear();
+        _activeSources.Clear();
+        StateHasChanged();
+    }
+
+    private void RemoveDoc(string docId)
+    {
+        KB.RemoveDocument(docId);
+        StateHasChanged();
+    }
+
+    private static bool IsReport(string content)
+        => content.TrimStart().StartsWith("REPORT:", StringComparison.OrdinalIgnoreCase);
+
+    private static string TypeClass(string type) => type.ToLowerInvariant() switch
+    {
+        "invoice"        => "invoice",
+        "bank statement" => "bank",
+        "receipt"        => "receipt",
+        "ledger"         => "ledger",
+        "contract"       => "contract",
+        "spreadsheet"    => "sheet",
+        _                => "doc",
+    };
+
+    private static string Truncate(string s, int max)
+        => s.Length <= max ? s : s[..max] + "…";
+
+    private static string FormatSize(int chars)
+        => chars >= 1000 ? $"{chars / 1000}k chars" : $"{chars} chars";
+
+    public void Dispose() => KB.OnChanged -= OnKbChanged;
+}

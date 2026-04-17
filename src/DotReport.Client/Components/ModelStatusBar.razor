@@ -1,20 +1,22 @@
 @inject ConsolidatorProxy Proxy
+@inject InferenceCircuitBreaker Breaker
 @implements IDisposable
 
-<div class="ec-model-statusbar">
-    <div class="ec-model-indicator @GetClass(Proxy.State.PrimaryStatus)" title="Phi-4 Mini (Primary)">
-        <span class="ec-model-indicator__led"></span>
-        <span class="ec-model-indicator__label">P</span>
-    </div>
-    <div class="ec-model-indicator @GetClass(Proxy.State.BackupStatus)" title="Qwen 2.5 (Backup)">
-        <span class="ec-model-indicator__led"></span>
-        <span class="ec-model-indicator__label">B</span>
-    </div>
+<div class="ec-agent-bar">
+    @foreach (var agent in Breaker.GetAgentInfos())
+    {
+        <div class="ec-agent @(agent.IsReady ? "ec-agent--ready" : "ec-agent--idle")
+                             @(agent.IsActive ? "ec-agent--active" : "")"
+             title="@agent.AgentLabel — @agent.BackendName">
+            <span class="ec-agent__led"></span>
+            <span class="ec-agent__label">@agent.AgentLabel</span>
+        </div>
+    }
     @if (Proxy.State.IsProcessing)
     {
-        <div class="ec-model-indicator ec-model-indicator--active">
-            <span class="ec-model-indicator__led ec-model-indicator__led--pulse"></span>
-            <span class="ec-model-indicator__label">INF</span>
+        <div class="ec-agent ec-agent--live" title="Inference running">
+            <span class="ec-agent__led ec-agent__led--pulse"></span>
+            <span class="ec-agent__label">LIVE</span>
         </div>
     }
 </div>
@@ -22,15 +24,6 @@
 @code {
     protected override void OnInitialized()
         => Proxy.OnStateChanged += StateHasChanged;
-
-    private static string GetClass(ModelStatus s) => s switch
-    {
-        ModelStatus.Ready       => "ec-model-indicator--ready",
-        ModelStatus.Loading     => "ec-model-indicator--loading",
-        ModelStatus.Downloading => "ec-model-indicator--loading",
-        ModelStatus.Error       => "ec-model-indicator--error",
-        _                       => "ec-model-indicator--idle"
-    };
 
     public void Dispose() => Proxy.OnStateChanged -= StateHasChanged;
 }

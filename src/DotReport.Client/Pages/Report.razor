@@ -44,15 +44,23 @@
             </button>
         }
 
+        @if (!string.IsNullOrEmpty(_processError))
+        {
+            <div class="ec-error-panel">
+                <span class="ec-label">Analysis Error</span>
+                <p>@_processError</p>
+            </div>
+        }
+
         <!-- Proxy state indicators -->
         <div class="ec-proxy-state">
             <div class="ec-proxy-indicator @(_primaryReady ? "ec-proxy-indicator--ok" : "")">
                 <span class="ec-proxy-indicator__dot"></span>
-                <span>PHI-4 MINI (PRIMARY)</span>
+                <span>Primary Layer</span>
             </div>
             <div class="ec-proxy-indicator @(_backupReady ? "ec-proxy-indicator--ok" : "")">
                 <span class="ec-proxy-indicator__dot"></span>
-                <span>QWEN 2.5 (BACKUP)</span>
+                <span>Backup Layer</span>
             </div>
             @if (Proxy.State.PrimaryExceedsLatencyThreshold)
             {
@@ -131,6 +139,7 @@
     private bool _streamMode     = true;
     private bool _primaryReady;
     private bool _backupReady;
+    private string? _processError;
     private readonly List<string> _tokens = new();
 
     private const string SystemPrompt =
@@ -148,7 +157,11 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        await Babylon.InitSceneAsync("drafting-canvas", Theme.CurrentThemeClass);
+        try
+        {
+            await Babylon.InitSceneAsync("drafting-canvas", Theme.CurrentThemeClass);
+        }
+        catch { /* Babylon.js CDN may not be ready — canvas is non-critical */ }
     }
 
     private void HandleDocumentLoaded(ReportDocument doc)
@@ -163,29 +176,40 @@
     {
         if (_document is null) return;
 
-        _processing = true;
+        _processing   = true;
+        _processError = null;
         _tokens.Clear();
         _result = null;
         StateHasChanged();
 
-        await Babylon.StartDraftingAnimationAsync("drafting-canvas");
-
-        var fullText = new System.Text.StringBuilder();
-        await foreach (var token in Proxy.InferAsync(_document.SourceContent, SystemPrompt))
+        try
         {
-            _tokens.Add(token);
-            fullText.Append(token);
-            StateHasChanged();
-            await Task.Yield(); // allow UI repaint between tokens
+            try { await Babylon.StartDraftingAnimationAsync("drafting-canvas"); } catch { }
+
+            var fullText = new System.Text.StringBuilder();
+            await foreach (var token in Proxy.InferAsync(_document.SourceContent, SystemPrompt))
+            {
+                _tokens.Add(token);
+                fullText.Append(token);
+                StateHasChanged();
+                await Task.Yield(); // allow UI repaint between tokens
+            }
+
+            try { await Babylon.StopDraftingAnimationAsync(); } catch { }
+
+            _result = ParseInferenceOutput(fullText.ToString(), _document,
+                Proxy.State.PrimaryStatus == ModelStatus.Ready ? ModelRole.Primary : ModelRole.Backup,
+                Proxy.State.PrimaryExceedsLatencyThreshold);
         }
-
-        await Babylon.StopDraftingAnimationAsync();
-
-        _result = ParseInferenceOutput(fullText.ToString(), _document,
-            Proxy.State.PrimaryStatus == ModelStatus.Ready ? ModelRole.Primary : ModelRole.Backup,
-            Proxy.State.PrimaryExceedsLatencyThreshold);
-        _processing = false;
-        StateHasChanged();
+        catch (Exception ex)
+        {
+            _processError = ex.Message;
+        }
+        finally
+        {
+            _processing = false;
+            StateHasChanged();
+        }
     }
 
     private static ReportDocument ParseInferenceOutput(

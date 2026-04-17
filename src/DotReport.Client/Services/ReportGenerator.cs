@@ -13,7 +13,15 @@ public sealed class ReportGenerator
 {
     static ReportGenerator()
     {
-        QuestPDF.Settings.License = LicenseType.Community;
+        try
+        {
+            QuestPDF.Settings.License = LicenseType.Community;
+        }
+        catch
+        {
+            // QuestPDF native initializer is not supported in all WASM environments.
+            // PDF export will degrade gracefully if called; startup is never blocked.
+        }
     }
 
     public byte[] Generate(ReportDocument doc)

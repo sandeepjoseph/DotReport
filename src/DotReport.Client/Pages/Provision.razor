@@ -9,66 +9,76 @@
 <PageTitle>Provision — DotReport EdgeCore</PageTitle>
 
 <div class="ec-provision">
+
     <div class="ec-provision__header">
-        <span class="ec-label">PROVISIONING SEQUENCE</span>
+        <h1 class="ec-provision__title">Engine Provisioning <span class="ec-label" style="vertical-align:middle;margin-left:8px">OPTIONAL</span></h1>
         <span class="ec-provision__status-text">@_statusText</span>
     </div>
 
-    <!-- 3D Dodecahedron scene (UAC 7.3) -->
+    <!-- 3D scene -->
     <div class="ec-dodecahedron-frame" id="dodecahedron-frame">
         <canvas id="dodecahedron-canvas" class="ec-3d-canvas"></canvas>
         <div class="ec-dodecahedron-overlay">
-            <span class="ec-label">FACES ASSEMBLED</span>
+            <span class="ec-label">Faces assembled</span>
             <span class="ec-face-counter">@_facesAssembled / 12</span>
         </div>
     </div>
 
-    <!-- Progress rail -->
+    <!-- Progress rails -->
     <div class="ec-provision-rails">
-        <!-- Primary model rail -->
         <div class="ec-rail">
             <div class="ec-rail__header">
-                <span class="ec-rail__name">PHI-4 MINI <span class="ec-label">PRIMARY</span></span>
+                <span class="ec-rail__name">XyOPST Custom AI <span class="ec-label">Primary</span></span>
                 <span class="ec-rail__status @GetStatusClass(_primaryStatus)">@_primaryStatus.ToString().ToUpper()</span>
             </div>
             <div class="ec-rail__bar">
                 <div class="ec-rail__fill" style="width: @(_primaryProgress)%"></div>
             </div>
-            <div class="ec-rail__meta">3.8B PARAMS / 4-BIT ONNX / ~3.8 GB VRAM</div>
+            <div class="ec-rail__meta">Primary Processing Layer · Edge-optimised · WebGPU Accelerated</div>
         </div>
 
-        <!-- Backup model rail -->
         <div class="ec-rail">
             <div class="ec-rail__header">
-                <span class="ec-rail__name">QWEN 2.5 <span class="ec-label">BACKUP</span></span>
+                <span class="ec-rail__name">XyOPST Custom AI <span class="ec-label">Backup</span></span>
                 <span class="ec-rail__status @GetStatusClass(_backupStatus)">@_backupStatus.ToString().ToUpper()</span>
             </div>
             <div class="ec-rail__bar">
                 <div class="ec-rail__fill" style="width: @(_backupProgress)%"></div>
             </div>
-            <div class="ec-rail__meta">1.5B PARAMS / 4-BIT ONNX / ~1.4 GB VRAM</div>
+            <div class="ec-rail__meta">Redundancy Layer · Latency-adaptive · Low-VRAM Fallback</div>
         </div>
     </div>
+
+    <!-- Skip notice -->
+    @if (!_provisioning && !_provisioned)
+    {
+        <div class="ec-error-panel" style="margin:0 auto 16px;max-width:600px;text-align:center">
+            <span class="ec-label">Built-in engine is ready now</span>
+            <p style="margin:6px 0 10px">Provisioning loads optional local AI models (~3–5 GB). The Intelligence Chat works immediately without them.</p>
+            <button class="ec-btn ec-btn--primary" @onclick="GoChat">
+                Open Intelligence Chat →
+            </button>
+        </div>
+    }
 
     <!-- Controls -->
     <div class="ec-provision-controls">
         @if (!_provisioning && !_provisioned)
         {
-            <button class="ec-btn ec-btn--primary" @onclick="StartProvision">
-                BEGIN PROVISIONING
+            <button class="ec-btn ec-btn--ghost" @onclick="StartProvision">
+                Load Local AI Models (optional)
             </button>
         }
         else if (_provisioning)
         {
             <button class="ec-btn ec-btn--ghost" disabled>
-                ASSEMBLING @_facesAssembled / 12 FACES
+                Assembling @_facesAssembled / 12 faces…
             </button>
         }
         else if (_provisioned)
         {
-            <!-- The "Play" button is only enabled when fully assembled. UAC 7.3 -->
-            <button class="ec-btn ec-btn--primary ec-btn--locked" @onclick="ProceedToReport">
-                LOCKED &amp; READY — OPEN REPORT ENGINE
+            <button class="ec-btn ec-btn--primary" @onclick="GoChat">
+                Open Intelligence Chat
             </button>
         }
     </div>
@@ -76,17 +86,18 @@
     @if (!string.IsNullOrEmpty(_errorMessage))
     {
         <div class="ec-error-panel">
-            <span class="ec-label">ERROR</span>
+            <span class="ec-label">Error</span>
             <p>@_errorMessage</p>
         </div>
     }
+
 </div>
 
 @code {
     private bool _provisioning;
     private bool _provisioned;
     private int  _facesAssembled;
-    private string _statusText     = "AWAITING INITIATION";
+    private string _statusText     = "Awaiting initiation";
     private string? _errorMessage;
 
     private ModelStatus _primaryStatus = ModelStatus.Unloaded;
@@ -97,15 +108,19 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        await Babylon.InitSceneAsync("dodecahedron-canvas", Theme.CurrentThemeClass);
-        await Babylon.StartUnfoldAsync();
+        try
+        {
+            await Babylon.InitSceneAsync("dodecahedron-canvas", Theme.CurrentThemeClass);
+            await Babylon.StartUnfoldAsync();
+        }
+        catch { /* Babylon.js CDN may not be ready — 3D scene is non-critical */ }
     }
 
     private async Task StartProvision()
     {
         _provisioning = true;
         _errorMessage = null;
-        _statusText   = "INITIALIZING FACTORY PIPELINE";
+        _statusText   = "Initialising factory pipeline";
         StateHasChanged();
 
         Orchestrator.OnStatusChanged += HandleStatusChanged;
@@ -113,31 +128,31 @@
 
         try
         {
-            _statusText = "DOWNLOADING PHI-4 MINI";
+            _statusText = "Initialising primary layer";
             StateHasChanged();
             await Orchestrator.ProvisionModelAsync(ModelConfig.Phi4Mini, Http);
 
-            _statusText = "DOWNLOADING QWEN 2.5";
+            _statusText = "Initialising backup layer";
             StateHasChanged();
             await Orchestrator.ProvisionModelAsync(ModelConfig.Qwen25, Http);
 
-            _statusText = "LOADING INTO ONNX RUNTIME";
+            _statusText = "Binding inference provider";
             StateHasChanged();
             await Orchestrator.LoadModelAsync(ModelConfig.Phi4Mini);
             await Orchestrator.LoadModelAsync(ModelConfig.Qwen25);
 
-            await Babylon.LockDodecahedronAsync();
+            try { await Babylon.LockDodecahedronAsync(); } catch { }
 
             _provisioned  = true;
             _provisioning = false;
-            _statusText   = "ASSEMBLY COMPLETE — ENGINE LOCKED";
+            _statusText   = "Assembly complete — engine ready";
             Proxy.State.ProvisioningFacesAssembled = ProxyState.TotalDodecahedronFaces;
         }
         catch (Exception ex)
         {
             _errorMessage = ex.Message;
             _provisioning = false;
-            _statusText   = "PROVISIONING FAILED";
+            _statusText   = "Provisioning failed";
         }
         finally
         {
@@ -151,13 +166,15 @@
     {
         if (config.Role == ModelRole.Primary)
         {
-            _primaryStatus   = status;
-            _primaryProgress = StatusToProgress(status);
+            _primaryStatus            = status;
+            _primaryProgress          = StatusToProgress(status);
+            Proxy.State.PrimaryStatus = status;
         }
         else
         {
-            _backupStatus   = status;
-            _backupProgress = StatusToProgress(status);
+            _backupStatus            = status;
+            _backupProgress          = StatusToProgress(status);
+            Proxy.State.BackupStatus = status;
         }
         StateHasChanged();
         return Task.CompletedTask;
@@ -166,7 +183,7 @@
     private async Task HandleSegmentCached(ModelConfig config, int faceIndex)
     {
         _facesAssembled = Math.Max(_facesAssembled, faceIndex);
-        await Babylon.AssembleFaceAsync(faceIndex);
+        try { await Babylon.AssembleFaceAsync(faceIndex); } catch { }
         StateHasChanged();
     }
 
@@ -189,5 +206,5 @@
         _                       => ""
     };
 
-    private void ProceedToReport() => Nav.NavigateTo("/report");
+    private void GoChat() => Nav.NavigateTo("/chat");
 }

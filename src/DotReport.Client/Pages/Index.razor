@@ -8,76 +8,67 @@
 
 <div class="ec-index">
 
-    <!-- ── Hero ── -->
+    <!-- Hero -->
     <section class="ec-hero">
-        <div class="ec-hero__stamp">XYOPST INTELLIGENCE · NETFORGE / REV-2026-A</div>
-        <h1 class="ec-hero__title">DOTREPORT<br/><span class="ec-hero__subtitle">EDGECORE</span></h1>
-        <p class="ec-hero__spec">MULTI-MODEL SOVEREIGN DOCUMENT INTELLIGENCE ENGINE</p>
-        <div class="ec-hero__rule"></div>
+        <p class="ec-hero__eyebrow">XyOPST Intelligence · DotReport EdgeCore</p>
+        <h1 class="ec-hero__title">Sovereign Document<br/><span>Intelligence Engine</span></h1>
         <p class="ec-hero__description">
-            Dual-model inference proxy running entirely on your device GPU.
-            Zero server compute. Zero data transmission. Fork it. Own it.
+            Upload any document — PDF, spreadsheet, Word, or CSV — and ask questions in plain English.
+            Multi-tier intelligence: built-in engine works immediately, optional local AI models for deeper analysis.
+            Zero server compute. Zero data transmission. Your documents never leave your machine.
         </p>
-        <div class="ec-powered-by">
-            <span class="ec-powered-by__label">POWERED BY</span>
-            <svg class="ec-powered-by__mark" viewBox="0 0 46 46" xmlns="http://www.w3.org/2000/svg" fill="none">
-                <line x1="5" y1="5" x2="23" y2="24" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
-                <line x1="41" y1="5" x2="23" y2="24" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
-                <line x1="23" y1="24" x2="8" y2="41" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
-                <line x1="23" y1="24" x2="38" y2="41" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
-                <circle cx="23" cy="11" r="6.5" fill="#f59e0b"/>
-                <circle cx="23" cy="24" r="3.5" fill="#f59e0b"/>
-            </svg>
-            <span class="ec-powered-by__name">X<span style="font-weight:400">YOPST</span> Intelligence</span>
+        <div class="ec-hero__actions">
+            <button class="ec-btn ec-btn--primary" @onclick="GoChat">
+                Open Intelligence Chat
+            </button>
+            <button class="ec-btn ec-btn--ghost" @onclick="GoReport">
+                Single Document Report
+            </button>
+        </div>
+        <span class="ec-hero__note">No setup required · built-in engine ready · upload and ask anything</span>
+    </section>
+
+    <!-- Features -->
+    <section class="ec-features">
+        <div class="ec-feature">
+            <div class="ec-feature__title">Upload &amp; Ask</div>
+            <p class="ec-feature__body">Drop PDFs, spreadsheets, Word docs, or CSV files into the Intelligence Chat. Ask anything — the built-in engine extracts fields, dates, and amounts immediately, no setup.</p>
+        </div>
+        <div class="ec-feature">
+            <div class="ec-feature__title">Cross-Document Analysis</div>
+            <p class="ec-feature__body">Upload multiple documents and compare them automatically. Matching amounts, date correlations, and discrepancies surface across your entire document set.</p>
+        </div>
+        <div class="ec-feature">
+            <div class="ec-feature__title">Edge Sovereignty</div>
+            <p class="ec-feature__body">All processing runs in your browser via Blazor WebAssembly. Zero telemetry. Zero API calls. Your documents never leave your machine.</p>
         </div>
     </section>
 
-    <!-- ── Architecture callout ── -->
-    <section class="ec-arch-callout">
-        <div class="ec-arch-callout__item">
-            <span class="ec-arch-callout__icon">⬡</span>
-            <span class="ec-arch-callout__title">DUAL-MODEL PROXY</span>
-            <span class="ec-arch-callout__body">Phi-4 Mini + Qwen 2.5 run concurrently. 500ms latency watchdog merges Backup if Primary stalls. You never see a hang.</span>
-        </div>
-        <div class="ec-arch-callout__item">
-            <span class="ec-arch-callout__icon">◈</span>
-            <span class="ec-arch-callout__title">OPEN SOURCE STACK</span>
-            <span class="ec-arch-callout__body">ONNX Runtime Web · Blazor WebAssembly · .NET 9 · WebGPU. Fully auditable. MIT licensed. Community edition, forever free.</span>
-        </div>
-        <div class="ec-arch-callout__item">
-            <span class="ec-arch-callout__icon">◉</span>
-            <span class="ec-arch-callout__title">EDGE SOVEREIGNTY</span>
-            <span class="ec-arch-callout__body">All inference executes on your GPU via WebGPU · WASM fallback. Zero telemetry. Zero API calls. Your documents never leave your device.</span>
-        </div>
-    </section>
-
-    <!-- ── Device Assessment ── -->
-    <section class="ec-capability-panel">
-        <div class="ec-capability-panel__header">
-            <span class="ec-label">DEVICE ASSESSMENT</span>
-        </div>
+    <!-- Device Assessment -->
+    <section class="ec-device-panel">
+        <div class="ec-device-panel__title">Device Assessment</div>
         @if (_caps is not null)
         {
-            <div class="ec-capability-grid">
-                <div class="ec-cap-item @(_caps.WebGpuSupported ? "ec-cap-item--ok" : "ec-cap-item--warn")">
-                    <span class="ec-cap-item__key">WEBGPU</span>
-                    <span class="ec-cap-item__val">@(_caps.WebGpuSupported ? "AVAILABLE" : "UNAVAILABLE")</span>
+            <div class="ec-device-grid">
+                <div class="ec-device-item @(_caps.WebGpuSupported ? "ec-device-item--ok" : "ec-device-item--warn")">
+                    <span class="ec-device-item__key">WebGPU</span>
+                    <span class="ec-device-item__val">@(_caps.WebGpuSupported ? "Available" : "Unavailable")</span>
                 </div>
-                <div class="ec-cap-item ec-cap-item--ok">
-                    <span class="ec-cap-item__key">WASM</span>
-                    <span class="ec-cap-item__val">@(_caps.WebAssemblySupported ? "AVAILABLE" : "UNAVAILABLE")</span>
+                <div class="ec-device-item ec-device-item--ok">
+                    <span class="ec-device-item__key">WASM</span>
+                    <span class="ec-device-item__val">@(_caps.WebAssemblySupported ? "Available" : "Unavailable")</span>
                 </div>
-                <div class="ec-cap-item @(_caps.HasSufficientVram ? "ec-cap-item--ok" : "ec-cap-item--warn")">
-                    <span class="ec-cap-item__key">VRAM</span>
-                    <span class="ec-cap-item__val">@(_caps.EstimatedVramMb) MB</span>
+                <div class="ec-device-item @(_caps.HasSufficientVram ? "ec-device-item--ok" : "ec-device-item--warn")">
+                    <span class="ec-device-item__key">VRAM</span>
+                    <span class="ec-device-item__val">@(_caps.EstimatedVramMb) MB</span>
                 </div>
-                <div class="ec-cap-item">
-                    <span class="ec-cap-item__key">BUILD</span>
-                    <span class="ec-cap-item__val">@_caps.RecommendedBuild.ToString().ToUpper()</span>
+                <div class="ec-device-item">
+                    <span class="ec-device-item__key">Build</span>
+                    <span class="ec-device-item__val">@_caps.RecommendedBuild.ToString()</span>
                 </div>
-                <div class="ec-cap-item ec-cap-item--wide">
-                    <span class="ec-cap-item__key">ADAPTER</span>
-                    <span class="ec-cap-item__val">@_caps.AdapterName</span>
+                <div class="ec-device-item ec-device-item--wide">
+                    <span class="ec-device-item__key">Adapter</span>
+                    <span class="ec-device-item__val">@_caps.AdapterName</span>
                 </div>
             </div>
         }
@@ -87,47 +78,26 @@
                 <span class="ec-scanning__dot"></span>
                 <span class="ec-scanning__dot"></span>
                 <span class="ec-scanning__dot"></span>
-                <span class="ec-scanning__label">SCANNING DEVICE</span>
+                <span class="ec-scanning__label">Scanning device</span>
             </div>
         }
     </section>
 
-    <!-- ── Action ── -->
-    <section class="ec-action-block">
-        @if (!Proxy.State.IsFullyProvisioned)
-        {
-            <button class="ec-btn ec-btn--primary" @onclick="GoProvision">
-                PROVISION ENGINE
-            </button>
-            <p class="ec-action-block__note">
-                One-time model download · Cached in browser IndexedDB · ~5 GB VRAM required
-            </p>
-        }
-        else
-        {
-            <button class="ec-btn ec-btn--primary" @onclick="GoReport">
-                OPEN DOCUMENT ENGINE
-            </button>
-            <p class="ec-action-block__note ec-action-block__note--ok">
-                ENGINE READY — ALL SYSTEMS NOMINAL
-            </p>
-        }
-    </section>
-
-    <!-- ── Spec Table ── -->
+    <!-- Spec Table -->
     <section class="ec-spec-table">
         <div class="ec-spec-row ec-spec-row--header">
-            <span>COMPONENT</span><span>SPECIFICATION</span><span>UAC</span>
+            <span>Component</span><span>Specification</span><span>Status</span>
         </div>
-        <div class="ec-spec-row"><span>Primary Model</span><span>Phi-4 Mini · 4-bit GPTQ ONNX · 3.8B params</span><span>7.2</span></div>
-        <div class="ec-spec-row"><span>Backup Model</span><span>Qwen 2.5 · 4-bit GPTQ ONNX · 1.5B params</span><span>7.2</span></div>
-        <div class="ec-spec-row"><span>Inference Backend</span><span>ONNX Runtime Web 1.20 · WebGPU / WASM</span><span>7.1</span></div>
-        <div class="ec-spec-row"><span>Latency Watchdog</span><span>Consolidator Proxy · 500ms merge threshold</span><span>7.2</span></div>
-        <div class="ec-spec-row"><span>3D Engine</span><span>Babylon.js · Kinetic Structuralism · Dodecahedron</span><span>7.3</span></div>
-        <div class="ec-spec-row"><span>Report Output</span><span>QuestPDF · .NET 9 WASM · In-process generation</span><span>7.5</span></div>
-        <div class="ec-spec-row"><span>Intelligence Layer</span><span>XyOPST Intelligence · Community Edition</span><span>—</span></div>
-        <div class="ec-spec-row"><span>Server Compute</span><span>ZERO · 100% Client GPU · MIT License</span><span>7.1</span></div>
+        <div class="ec-spec-row"><span>Tier 1 — Cloud LLM</span><span>Server proxy · Azure OpenAI / Anthropic · highest quality</span><span>Optional</span></div>
+        <div class="ec-spec-row"><span>Tier 2 — Local ONNX</span><span>Phi-4 Mini · Qwen 2.5 · WebGPU accelerated · ~3–5 GB</span><span>Optional</span></div>
+        <div class="ec-spec-row"><span>Tier 3 — Built-in Engine</span><span>Pattern extraction · field detection · always available</span><span>Ready ✓</span></div>
+        <div class="ec-spec-row"><span>Circuit Breaker</span><span>Auto-fallback across tiers · decorrelated jitter backoff</span><span>Active</span></div>
+        <div class="ec-spec-row"><span>Document Formats</span><span>PDF · DOCX · XLSX · CSV · TXT · MD</span><span>Ready ✓</span></div>
+        <div class="ec-spec-row"><span>Cross-Doc Intelligence</span><span>Amount matching · discrepancy detection · date clustering</span><span>Ready ✓</span></div>
+        <div class="ec-spec-row"><span>Report Export</span><span>PDF generation · in-process · no server</span><span>Ready ✓</span></div>
+        <div class="ec-spec-row"><span>Data Sovereignty</span><span>Zero telemetry · zero API calls · 100% client-side</span><span>Enforced</span></div>
     </section>
+
 </div>
 
 @code {
@@ -136,10 +106,17 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        _caps = await VramDetector.DetectAsync();
+        try
+        {
+            _caps = await VramDetector.DetectAsync();
+        }
+        catch
+        {
+            // VRAM detection is best-effort.
+        }
         StateHasChanged();
     }
 
-    private void GoProvision() => Nav.NavigateTo("/provision");
+    private void GoChat()      => Nav.NavigateTo("/chat");
     private void GoReport()    => Nav.NavigateTo("/report");
 }

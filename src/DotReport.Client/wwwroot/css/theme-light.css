@@ -1,125 +1,18 @@
-/* ============================================================
-   Theme A: Architectural Archive (Retro Light)
-   Deep-etched borders, no gradients, paper textures.
-   Milled aluminum dodecahedron with technical manufacture stamps.
-   Large chunky 1970s laboratory toggle switches.
-   UAC 7.4
-   ============================================================ */
-
+/* ── Light theme ────────────────────────────────────────── */
 .ec-theme--light {
-    /* ── Backgrounds ─────────────────────────────── */
-    --ec-bg-base:     #f2efea;   /* aged drafting paper */
-    --ec-bg-elevated: #e8e4de;   /* slightly darker paper */
-    --ec-bg-inset:    #dedad4;   /* inset blueprint surface */
-
-    /* ── Borders ──────────────────────────────────── */
-    --ec-border:        #6a6055;  /* deep-etched border */
-    --ec-border-subtle: #b0a898;
-
-    /* ── Text ─────────────────────────────────────── */
-    --ec-text-primary:   #1a1614;
-    --ec-text-secondary: #3d3530;
-    --ec-text-muted:     #8a8078;
-
-    /* ── Accent / Status ──────────────────────────── */
-    --ec-accent: #1a1614;
-    --ec-ok:     #2a5c2a;
-    --ec-warn:   #7a4a10;
-    --ec-error:  #6a1818;
-}
-
-/* Topbar: elevated aged paper shelf */
-.ec-theme--light .ec-topbar {
-    background: #e8e4de;
-    border-bottom: 2px solid #4a4038;
-}
-
-/* Nav links on light: stamp-like active state */
-.ec-theme--light .ec-nav-link--active {
-    background: #1a1614;
-    color: #f2efea;
-    border-color: #1a1614;
-}
-
-/* Hero: deeper border on light */
-.ec-theme--light .ec-hero {
-    border-left-color: #1a1614;
-}
-
-/* Buttons: thick border, physical press feedback */
-.ec-theme--light .ec-btn {
-    border-width: 2px;
-    border-color: #1a1614;
-}
-.ec-theme--light .ec-btn:active:not(:disabled) {
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
-    transform: translateY(1px);
-}
-
-/* Dodecahedron: aluminum plate finish */
-.ec-theme--light .ec-dodecahedron-frame {
-    background: #dedad4;
-    border-color: #6a6055;
-}
-
-/* Manufacture stamps on canvas overlay (serial numbers, dates) */
-.ec-theme--light .ec-dodecahedron-frame::after {
-    content: 'SN-DR-001 / MFG: 2026-A / EDGECORE';
-    position: absolute;
-    bottom: 8px;
-    left: 12px;
-    font-size: 7px;
-    letter-spacing: 0.15em;
-    color: #8a8078;
-    pointer-events: none;
-}
-
-/* Rail progress: dark ink fill */
-.ec-theme--light .ec-rail__fill {
-    background: #1a1614;
-}
-
-/* Toggle switch: chunky 1970s lab equipment */
-.ec-theme--light .ec-phys-toggle__body {
-    border-width: 3px;
-    border-color: #1a1614;
-    border-radius: 0;
-    box-shadow: 2px 2px 0 #6a6055, inset 0 1px 0 rgba(255,255,255,0.3);
-}
-.ec-theme--light .ec-phys-toggle__body--on {
-    background: #1a1614;
-    box-shadow: 1px 1px 0 #6a6055, inset 0 2px 4px rgba(0,0,0,0.4);
-}
-.ec-theme--light .ec-phys-toggle__lever {
-    border: 2px solid #6a6055;
-    border-radius: 0;
-    background: #e8e4de;
-    box-shadow: 1px 1px 0 #4a4038;
-}
-
-/* Capability grid: blueprint grid lines */
-.ec-theme--light .ec-capability-grid {
-    background: #b0a898;
-}
-
-/* Spec table: alternating paper tones */
-.ec-theme--light .ec-spec-row:nth-child(even) {
-    background: #eae6e0;
-}
-
-/* Token stream: ink on aged paper */
-.ec-theme--light .ec-token-stream__body {
-    background: #f2efea;
-    color: #1a1614;
-}
-
-/* Model indicator LEDs: more subdued on light */
-.ec-theme--light .ec-model-indicator {
-    border-color: #b0a898;
-}
-
-/* Footer: stamp-like */
-.ec-theme--light .ec-footer {
-    background: #dedad4;
-    border-top-color: #6a6055;
+    --bg:           #f8f9fc;
+    --surface:      #ffffff;
+    --border:       #e2e8f0;
+    --hover:        #f1f5f9;
+    --text:         #0f172a;
+    --text-soft:    #475569;
+    --muted:        #94a3b8;
+    --accent:       #6366f1;
+    --accent-hover: #4f52e0;
+    --accent-dim:   rgba(99,102,241,0.06);
+    --ok:           #16a34a;
+    --warn:         #d97706;
+    --error:        #dc2626;
+    --error-border: rgba(220,38,38,0.25);
+    --error-text:   #991b1b;
 }

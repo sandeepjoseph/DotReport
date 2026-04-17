@@ -28,7 +28,7 @@
         @keyframes bs-pulse { 0%,100%{opacity:0.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.04)} }
 
         #ec-boot {
-            position:fixed; inset:0;
+            position:fixed; inset:0; z-index:9999;
             background:#060609;
             display:flex; flex-direction:column;
             align-items:center; justify-content:center;
@@ -116,12 +116,7 @@
             background:radial-gradient(ellipse at center, rgba(99,102,241,0.04) 0%, transparent 65%);
             animation:bs-pulse 5s ease-in-out infinite;
         }
-        /* Dot grid */
-        #bs-grid {
-            inset:0;
-            background-image:radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px);
-            background-size:28px 28px;
-        }
+        #bs-grid { display: none; }
 
         /* ── Content wrapper — sits above shapes ── */
         #bs-content {
@@ -208,24 +203,6 @@
         }
         #ec-stage::before { content:'▸ '; color:#6366f1; }
 
-        /* ── Architect + split layout ── */
-        #bs-content {
-            flex-direction: row !important;
-            align-items: center;
-            gap: 48px;
-        }
-        #bs-architect {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            flex-shrink: 0;
-        }
-        #bs-arch-label {
-            font-size: 8px;
-            letter-spacing: 0.2em;
-            color: rgba(245,158,11,0.7);
-        }
         #bs-right {
             display: flex;
             flex-direction: column;
@@ -248,113 +225,67 @@
         }
     </style>
 
-    <div id="app">
-        <div id="ec-boot">
-            <!-- Geometric background shapes -->
-            <div id="bs-grid"  class="bs-geo"></div>
-            <div id="bs-blob"  class="bs-geo"></div>
-            <div id="bs-hex-a" class="bs-geo"></div>
-            <div id="bs-hex-b" class="bs-geo"></div>
-            <div id="bs-tri-a" class="bs-geo"></div>
-            <div id="bs-dia"   class="bs-geo"></div>
-            <div id="bs-ring-a"class="bs-geo"></div>
-            <div id="bs-ring-b"class="bs-geo"></div>
-            <div id="bs-hex-c" class="bs-geo"></div>
-            <div id="bs-tri-b" class="bs-geo"></div>
+    <!-- Boot screen lives OUTSIDE #app so Blazor's render never removes it.
+         Only window.dismissBootScreen (called from MainLayout.OnAfterRenderAsync) removes it. -->
+    <div id="ec-boot">
+        <!-- Geometric background shapes -->
+        <div id="bs-grid"  class="bs-geo"></div>
+        <div id="bs-blob"  class="bs-geo"></div>
+        <div id="bs-hex-a" class="bs-geo"></div>
+        <div id="bs-hex-b" class="bs-geo"></div>
+        <div id="bs-tri-a" class="bs-geo"></div>
+        <div id="bs-dia"   class="bs-geo"></div>
+        <div id="bs-ring-a"class="bs-geo"></div>
+        <div id="bs-ring-b"class="bs-geo"></div>
+        <div id="bs-hex-c" class="bs-geo"></div>
+        <div id="bs-tri-b" class="bs-geo"></div>
 
-            <!-- Content -->
-            <div id="bs-content">
-                <!-- Left: architect figure -->
-                <div id="bs-architect" aria-hidden="true">
-                    <svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg" fill="none" width="140" height="175">
-                        <!-- Drafting table surface -->
-                        <rect x="20" y="130" width="130" height="5" rx="2" fill="#6366f1" opacity="0.5"/>
-                        <line x1="30"  y1="135" x2="18"  y2="175" stroke="#252530" stroke-width="3" stroke-linecap="round"/>
-                        <line x1="140" y1="135" x2="152" y2="175" stroke="#252530" stroke-width="3" stroke-linecap="round"/>
-                        <!-- Blueprint on table -->
-                        <rect x="55" y="100" width="90" height="32" rx="1" fill="rgba(99,102,241,0.1)" stroke="rgba(99,102,241,0.35)" stroke-width="1"/>
-                        <line x1="63"  y1="112" x2="137" y2="112" stroke="#06b6d4" stroke-width="0.8" opacity="0.6"/>
-                        <line x1="63"  y1="120" x2="120" y2="120" stroke="#06b6d4" stroke-width="0.8" opacity="0.6"/>
-                        <rect x="65"  y="104" width="22"  height="13" fill="none" stroke="#6366f1" stroke-width="0.8" opacity="0.7"/>
-                        <line x1="95"  y1="107" x2="130" y2="107" stroke="#f59e0b" stroke-width="0.8" opacity="0.5"/>
-                        <line x1="95"  y1="111" x2="125" y2="111" stroke="#f59e0b" stroke-width="0.8" opacity="0.4"/>
-                        <!-- Scanning dot on blueprint -->
-                        <circle cx="140" cy="108" r="2" fill="#06b6d4" opacity="0.9">
-                            <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
-                        </circle>
-                        <!-- Chair back -->
-                        <rect x="38" y="110" width="6" height="30" rx="3" fill="#1a1a2e" stroke="#252530" stroke-width="1"/>
-                        <!-- Torso -->
-                        <line x1="52" y1="93"  x2="52" y2="125" stroke="#a0a0c0" stroke-width="3.5" stroke-linecap="round"/>
-                        <!-- Arm to table -->
-                        <line x1="52" y1="105" x2="88" y2="118" stroke="#a0a0c0" stroke-width="3"   stroke-linecap="round"/>
-                        <!-- Other arm resting -->
-                        <line x1="52" y1="105" x2="34" y2="112" stroke="#a0a0c0" stroke-width="3"   stroke-linecap="round"/>
-                        <!-- Legs sitting -->
-                        <line x1="52" y1="125" x2="42" y2="148" stroke="#a0a0c0" stroke-width="3"   stroke-linecap="round"/>
-                        <line x1="52" y1="125" x2="65" y2="142" stroke="#a0a0c0" stroke-width="3"   stroke-linecap="round"/>
-                        <!-- Head -->
-                        <circle cx="52" cy="83" r="11" fill="none" stroke="#f59e0b" stroke-width="2.5"/>
-                        <!-- Face details -->
-                        <circle cx="49" cy="82" r="1.5" fill="#f59e0b" opacity="0.8"/>
-                        <circle cx="55" cy="82" r="1.5" fill="#f59e0b" opacity="0.8"/>
-                        <path d="M 48 87 Q 52 90 56 87" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.8"/>
-                        <!-- Pencil in hand -->
-                        <line x1="86" y1="116" x2="100" y2="108" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
-                        <polygon points="100,106 103,108 100,111" fill="#f59e0b" opacity="0.9"/>
-                        <!-- Floating neon accent dots around architect -->
-                        <circle cx="120" cy="90"  r="1.5" fill="#6366f1" opacity="0.8"><animate attributeName="opacity" values="0.2;0.9;0.2" dur="3.1s" repeatCount="indefinite"/></circle>
-                        <circle cx="18"  cy="95"  r="1"   fill="#06b6d4" opacity="0.7"><animate attributeName="opacity" values="0.1;0.8;0.1" dur="2.3s" repeatCount="indefinite"/></circle>
-                        <circle cx="145" cy="130" r="1"   fill="#f43f5e" opacity="0.7"><animate attributeName="opacity" values="0.2;1;0.2"   dur="1.8s" repeatCount="indefinite"/></circle>
-                        <circle cx="25"  cy="155" r="1.5" fill="#f59e0b" opacity="0.6"><animate attributeName="opacity" values="0.1;0.7;0.1" dur="2.7s" repeatCount="indefinite"/></circle>
+        <!-- Content -->
+        <div id="bs-content">
+            <div id="bs-right">
+                <div id="bs-logo-ring">
+                    <svg width="72" height="72" viewBox="0 0 64 64" fill="none">
+                        <polygon points="32,6 58,18 58,46 32,58 6,46 6,18"
+                                 fill="none" stroke="#6366f1" stroke-width="1.5"/>
+                        <polygon points="32,14 50,22 50,42 32,50 14,42 14,22"
+                                 fill="none" stroke="rgba(6,182,212,0.4)" stroke-width="1"/>
+                        <circle cx="32" cy="32" r="4" fill="rgba(99,102,241,0.6)"/>
                     </svg>
-                    <div id="bs-arch-label">XYOPST ARCHITECT</div>
                 </div>
 
-                <!-- Right: logo + progress -->
-                <div id="bs-right">
-                    <div id="bs-logo-ring">
-                        <svg width="72" height="72" viewBox="0 0 64 64" fill="none">
-                            <polygon points="32,6 58,18 58,46 32,58 6,46 6,18"
-                                     fill="none" stroke="#6366f1" stroke-width="1.5"/>
-                            <polygon points="32,14 50,22 50,42 32,50 14,42 14,22"
-                                     fill="none" stroke="rgba(6,182,212,0.4)" stroke-width="1"/>
-                            <circle cx="32" cy="32" r="4" fill="rgba(99,102,241,0.6)"/>
-                        </svg>
-                    </div>
+                <div id="bs-title">DOTREPORT / EDGECORE</div>
+                <div id="bs-subtitle">NET-FORGE DOCUMENT ANALYSIS SYSTEM — REV-2026-A</div>
+                <div id="bs-powered">
+                    <svg viewBox="0 0 44 48" xmlns="http://www.w3.org/2000/svg" fill="none" width="18" height="20">
+                        <circle cx="22" cy="8" r="6" fill="#f59e0b"/>
+                        <line x1="22" y1="14" x2="22" y2="29" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
+                        <line x1="22" y1="20" x2="5"  y2="10" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
+                        <line x1="22" y1="20" x2="39" y2="10" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
+                        <line x1="22" y1="29" x2="10" y2="45" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
+                        <line x1="22" y1="29" x2="34" y2="45" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
+                    </svg>
+                    <span>INTELLIGENCE by XYOPST EDGE</span>
+                </div>
 
-                    <div id="bs-title">DOTREPORT / EDGECORE</div>
-                    <div id="bs-subtitle">NET-FORGE DOCUMENT ANALYSIS SYSTEM — REV-2026-A</div>
-                    <div id="bs-powered">
-                        <svg viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg" fill="none" width="18" height="18">
-                            <line x1="3" y1="3" x2="15" y2="15" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
-                            <line x1="27" y1="3" x2="15" y2="15" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
-                            <line x1="15" y1="15" x2="5" y2="27" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
-                            <line x1="15" y1="15" x2="25" y2="27" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
-                            <circle cx="15" cy="8" r="4" fill="#f59e0b"/>
-                            <circle cx="15" cy="15" r="2.5" fill="#f59e0b"/>
-                        </svg>
-                        <span>POWERED BY XYOPST INTELLIGENCE</span>
+                <div id="bs-progress">
+                    <div id="bs-bar-label">
+                        <span>EXECUTION ENGINE LOAD IN PROGRESS</span>
+                        <span id="ec-pct">0%</span>
                     </div>
-
-                    <div id="bs-progress">
-                        <div id="bs-bar-label">
-                            <span>EXECUTION ENGINE LOAD IN PROGRESS</span>
-                            <span id="ec-pct">0%</span>
+                    <div id="bs-track">
+                        <div id="ec-bar"></div>
+                        <div id="bs-ticks">
+                            <div></div><div></div><div></div><div></div>
+                            <div></div><div></div><div></div><div></div>
                         </div>
-                        <div id="bs-track">
-                            <div id="ec-bar"></div>
-                            <div id="bs-ticks">
-                                <div></div><div></div><div></div><div></div>
-                                <div></div><div></div><div></div><div></div>
-                            </div>
-                        </div>
-                        <div id="ec-stage">LOADING WASM RUNTIME</div>
                     </div>
+                    <div id="ec-stage">LOADING WASM RUNTIME</div>
                 </div>
             </div>
         </div>
     </div>
+
+    <div id="app"></div>
 
     <div id="blazor-error-ui" style="display:none">
         <span class="dismiss" onclick="document.getElementById('blazor-error-ui').style.display='none'">✕</span>
@@ -364,88 +295,192 @@
     <!-- Core app interop (file download, drag-drop, theme switching) -->
     <script src="js/app-interop.js"></script>
 
-    <!-- CDN libs moved here so <body> renders first — boot screen shows before these download -->
-    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
-
-    <!-- Blazor WASM bootstrap — auto-start (default) -->
+    <!-- Blazor WASM bootstrap — default autostart (DO NOT add autostart="false").
+         The .NET 9 dotnet.js runtime manages its own internal fetch pipeline after
+         the first loadBootResource call; manual Blazor.start() stalls it. -->
     <script src="_framework/blazor.webassembly.js"></script>
 
-    <!-- Boot screen animation + auto-dismiss watcher -->
+    <!-- CDN libs: async so they don't block Blazor startup -->
+    <script async src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
+    <script async src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script async src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+
+    <!-- Boot screen: smooth asymptotic progress + 3-min safety timer -->
     <script>
         (function () {
-            const bar   = document.getElementById('ec-bar');
-            const pct   = document.getElementById('ec-pct');
-            const stage = document.getElementById('ec-stage');
+            'use strict';
 
-            const stages = [
-                { at:  0, label: 'LOADING WASM RUNTIME' },
-                { at: 12, label: 'BOOTSTRAPPING .NET CLR' },
-                { at: 25, label: 'RESOLVING ASSEMBLIES' },
-                { at: 38, label: 'INITIALISING INTEROP LAYER' },
-                { at: 52, label: 'BINDING ONNX EXECUTION PROVIDER' },
-                { at: 65, label: 'REGISTERING INFERENCE SERVICES' },
-                { at: 78, label: 'MOUNTING RENDER PIPELINE' },
-                { at: 90, label: 'FINALISING ENGINE STATE' },
+            var bar   = document.getElementById('ec-bar');
+            var pct   = document.getElementById('ec-pct');
+            var stage = document.getElementById('ec-stage');
+            var _frozen = false, _pct = 0;
+
+            // ── Helpers ──────────────────────────────────────────────────────
+            function setProgress(v) {
+                _pct = Math.min(Math.max(v, _pct), 99);
+                if (bar) bar.style.width  = _pct + '%';
+                if (pct) pct.textContent  = Math.floor(_pct) + '%';
+            }
+
+            function setStage(label) {
+                if (_frozen || !stage) return;
+                stage.textContent = label;
+            }
+
+            function showError(msg) {
+                _frozen = true;
+                if (stage) { stage.style.color = '#f43f5e'; stage.textContent = msg; }
+                if (pct)   { pct.style.color   = '#f43f5e'; }
+                var prog = document.getElementById('bs-progress');
+                if (prog && !document.getElementById('bs-reload-btn')) {
+                    var btn = document.createElement('button');
+                    btn.id = 'bs-reload-btn';
+                    btn.textContent = 'RELOAD';
+                    btn.style.cssText =
+                        'margin-top:16px;padding:8px 24px;background:transparent;' +
+                        'border:1px solid #f43f5e;color:#f43f5e;font-family:monospace;' +
+                        'font-size:11px;letter-spacing:0.12em;cursor:pointer;';
+                    btn.onclick = function () { location.reload(); };
+                    prog.appendChild(btn);
+                }
+            }
+
+            // ── Stage labels keyed to progress thresholds ────────────────────
+            var stageMap = [
+                { at: 0,  label: 'LOADING WASM RUNTIME'          },
+                { at: 18, label: 'BOOTSTRAPPING .NET CLR'         },
+                { at: 35, label: 'RESOLVING ASSEMBLIES'           },
+                { at: 52, label: 'BINDING EXECUTION PROVIDER'     },
+                { at: 67, label: 'REGISTERING INFERENCE SERVICES' },
+                { at: 80, label: 'MOUNTING RENDER PIPELINE'       },
+                { at: 90, label: 'FINALISING ENGINE STATE'        },
             ];
-
-            let current = 0, stageIdx = 0;
-
-            function setProgress(value) {
-                current = Math.min(value, 99);
-                if (bar) bar.style.width = current + '%';
-                if (pct) pct.textContent = Math.floor(current) + '%';
-                for (let i = stages.length - 1; i >= 0; i--) {
-                    if (current >= stages[i].at) {
-                        if (stageIdx !== i) { stageIdx = i; if (stage) stage.textContent = stages[i].label; }
+            var _lastStageIdx = -1;
+            function updateStageLabel() {
+                for (var i = stageMap.length - 1; i >= 0; i--) {
+                    if (_pct >= stageMap[i].at) {
+                        if (_lastStageIdx !== i) { _lastStageIdx = i; setStage(stageMap[i].label); }
                         break;
                     }
                 }
             }
 
-            // Simulate realistic WASM boot curve
-            const schedule = [
-                { target:  8, duration: 180 },
-                { target: 25, duration: 600 },
-                { target: 40, duration: 900 },
-                { target: 55, duration: 700 },
-                { target: 70, duration: 500 },
-                { target: 82, duration: 600 },
-                { target: 90, duration: 800 },
-            ];
-
-            let step = 0, startTime = null, startVal = 0;
-            function animate(ts) {
-                if (step >= schedule.length) return;
-                if (!startTime) { startTime = ts; startVal = current; }
-                const { target, duration } = schedule[step];
-                const t = Math.min((ts - startTime) / duration, 1);
-                setProgress(startVal + (target - startVal) * (1 - (1 - t) * (1 - t)));
-                if (t < 1) { requestAnimationFrame(animate); }
-                else { step++; startTime = null; startVal = current; if (step < schedule.length) requestAnimationFrame(animate); }
+            // ── Smooth asymptotic animation ───────────────────────────────────
+            // Uses exponential decay toward 93%: fast early, slows near the top.
+            // Time-constant 35s → at 35s ≈58%, 70s ≈80%, 105s ≈89%, never hits 93%.
+            // Blazor dismisses the screen when it actually renders — this is purely visual.
+            var _startTs = null;
+            var TAU = 35000; // ms — tune this to match typical cold-load time
+            function animateProgress(ts) {
+                if (_frozen) return;
+                if (!_startTs) _startTs = ts;
+                var elapsed = ts - _startTs;
+                var target  = 93 * (1 - Math.exp(-elapsed / TAU));
+                setProgress(target);
+                updateStageLabel();
+                requestAnimationFrame(animateProgress);
             }
-            requestAnimationFrame(animate);
+            requestAnimationFrame(animateProgress);
 
-            // Blazor auto-starts and replaces #app children, naturally removing #ec-boot from DOM.
-            // MutationObserver detects the replacement and clears the stuck-timeout.
-            const app = document.getElementById('app');
-            const stuckTimer = setTimeout(() => {
-                // Still showing after 30s — show error, then force dismiss
-                if (stage) { stage.style.color = '#f43f5e'; stage.textContent = 'LOAD TIMEOUT — CHECK BROWSER CONSOLE'; }
-                if (pct)   { pct.style.color = '#f43f5e'; }
-                setTimeout(() => {
-                    const b = document.getElementById('ec-boot');
-                    if (b) { b.style.transition = 'opacity 400ms'; b.style.opacity = '0'; setTimeout(() => b.style.display = 'none', 420); }
-                }, 5000);
-            }, 30000);
+            // ── Intercept console.error — Blazor ALWAYS calls this before ────
+            // showing #blazor-error-ui. This gives us the real error text
+            // on screen without requiring DevTools to be open.
+            (function () {
+                var _orig = console.error;
+                console.error = function () {
+                    _orig.apply(console, arguments); // DevTools still sees it
+                    if (_frozen) return;
+                    var parts = [];
+                    for (var i = 0; i < arguments.length; i++) {
+                        var a = arguments[i];
+                        if (typeof a === 'string') parts.push(a);
+                        else if (a && typeof a.message === 'string') parts.push(a.message);
+                        else try { parts.push(String(a)); } catch (x) { /* skip */ }
+                    }
+                    var msg = parts.join(' ').trim();
+                    // Only capture meaningful messages (filter Blazor hot-reload noise)
+                    if (msg.length > 10) {
+                        showError('ERROR — ' + msg.substring(0, 300));
+                    }
+                };
+            })();
 
-            if (app) {
-                const obs = new MutationObserver(() => {
-                    if (!document.getElementById('ec-boot')) { clearTimeout(stuckTimer); obs.disconnect(); }
-                });
-                obs.observe(app, { childList: true });
-            }
+            // ── 10-minute safety net — covers slow cold-start WASM compilation ─
+            // First load compiles 207 WASM modules; on slow/AV-scanned machines
+            // this can genuinely take several minutes. Only fires if nothing else
+            // already showed an error.
+            var stuckTimer = setTimeout(function () {
+                if (!_frozen) {
+                    showError('LOAD TIMEOUT — OPEN BROWSER CONSOLE (F12) · PRESS F5 TO RETRY');
+                }
+            }, 600000); // 10 minutes
+
+            // ── Catch synchronous JS errors ──────────────────────────────────
+            window.onerror = function (msg, src, line, col, err) {
+                var text = err ? err.message : (msg || 'Unknown JS Error');
+                showError('JS ERROR — ' + String(text).substring(0, 200));
+                return false;
+            };
+
+            // ── Catch all unhandled Promise rejections ────────────────────────
+            window.addEventListener('unhandledrejection', function (e) {
+                var msg;
+                if (e.reason && e.reason.message) {
+                    msg = e.reason.message;
+                } else if (e.reason !== undefined && e.reason !== null) {
+                    msg = String(e.reason);
+                } else {
+                    msg = 'Unhandled Promise Rejection';
+                }
+                showError('ENGINE ERROR — ' + msg.substring(0, 200));
+            });
+
+            // ── Watch for Blazor's built-in error panel becoming visible ─────
+            (function () {
+                var bui = document.getElementById('blazor-error-ui');
+                if (!bui) return;
+                new MutationObserver(function () {
+                    if (bui.style.display !== 'none' && bui.style.display !== '') {
+                        // Only show generic message if no specific error was already captured
+                        if (!_frozen) {
+                            showError('BLAZOR RUNTIME ERROR — CHECK CONSOLE (F12) FOR DETAILS');
+                        }
+                    }
+                }).observe(bui, { attributes: true, attributeFilter: ['style'] });
+            })();
+
+            // ── Called from MainLayout.OnAfterRenderAsync ─────────────────────
+            // ── Blazor utility helpers ────────────────────────────────────────
+            window.dotreport = {
+                downloadFile: function (fileName, mimeType, data) {
+                    var blob = new Blob([new Uint8Array(data)], { type: mimeType });
+                    var url  = URL.createObjectURL(blob);
+                    var a    = document.createElement('a');
+                    a.href     = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+                },
+                scrollToBottom: function (elementId) {
+                    var el = document.getElementById(elementId);
+                    if (el) el.scrollTop = el.scrollHeight;
+                }
+            };
+
+            window.dismissBootScreen = function () {
+                clearTimeout(stuckTimer);
+                _frozen = true;
+                var b = document.getElementById('ec-boot');
+                if (!b) return;
+                b.style.transition = 'opacity 320ms ease';
+                b.style.opacity    = '0';
+                setTimeout(function () {
+                    if (b && b.parentNode) b.parentNode.removeChild(b);
+                }, 340);
+            };
+
         })();
     </script>
 </body>

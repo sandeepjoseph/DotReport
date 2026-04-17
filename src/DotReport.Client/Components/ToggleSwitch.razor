@@ -1,10 +1,8 @@
-<!-- Chunky physical toggle — 1970s laboratory equipment aesthetic. UAC 7.4 -->
-<div class="ec-phys-toggle" @onclick="Toggle">
-    <div class="ec-phys-toggle__body @(Value ? "ec-phys-toggle__body--on" : "ec-phys-toggle__body--off")">
-        <span class="ec-phys-toggle__lever"></span>
+<div class="ec-toggle-wrapper" @onclick="Toggle" style="cursor:pointer">
+    <span class="ec-toggle-label-text">@Label</span>
+    <div class="ec-toggle-track @(Value ? "ec-toggle-track--on" : "")">
+        <div class="ec-toggle-thumb"></div>
     </div>
-    <span class="ec-phys-toggle__label">@Label</span>
-    <span class="ec-phys-toggle__state">@(Value ? "ON" : "OFF")</span>
 </div>
 
 @code {

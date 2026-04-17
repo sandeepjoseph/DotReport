@@ -7,11 +7,25 @@
            @ondrop="HandleDrop">
         <span class="ec-uploader__icon">▣</span>
         <span class="ec-uploader__label">DROP DOCUMENT HERE</span>
-        <span class="ec-uploader__sub">TXT / PDF / MD / CSV</span>
-        <InputFile OnChange="HandleFileSelected" accept=".txt,.pdf,.md,.csv" style="display:none" />
+        <span class="ec-uploader__sub">TXT / PDF / MD / CSV / DOCX / XLSX</span>
+        <InputFile OnChange="HandleFileSelected" accept=".txt,.md,.csv,.tsv,.pdf,.docx,.xlsx" style="display:none" />
     </label>
 
-    @if (!string.IsNullOrEmpty(_loadedFileName))
+    @if (_parsing)
+    {
+        <div class="ec-uploader__loaded">
+            <span class="ec-label">PARSING...</span>
+            <span class="ec-uploader__filename">@_loadedFileName</span>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(_parseError))
+    {
+        <div class="ec-uploader__loaded ec-uploader__loaded--error">
+            <span class="ec-label">ERROR</span>
+            <span class="ec-uploader__filename">@_parseError</span>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(_loadedFileName))
     {
         <div class="ec-uploader__loaded">
             <span class="ec-label">LOADED</span>
@@ -22,9 +36,12 @@
 
 @code {
     [Parameter] public EventCallback<ReportDocument> OnDocumentLoaded { get; set; }
+    [Inject] DocumentParserFactory ParserFactory { get; set; } = default!;
 
     private bool _dragging;
+    private bool _parsing;
     private string _loadedFileName = string.Empty;
+    private string? _parseError;
 
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
     {
@@ -42,18 +59,33 @@
     private async Task ReadAndNotify(IBrowserFile file)
     {
         _loadedFileName = file.Name;
-        using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
-        using var reader = new System.IO.StreamReader(stream);
-        var content = await reader.ReadToEndAsync();
-
-        var doc = new ReportDocument
-        {
-            DocumentId     = Guid.NewGuid().ToString("N"),
-            SourceFileName = file.Name,
-            SourceContent  = content
-        };
-
-        await OnDocumentLoaded.InvokeAsync(doc);
+        _parsing = true;
+        _parseError = null;
         StateHasChanged();
+
+        try
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024);
+            var content = await ParserFactory.ExtractTextAsync(stream, file.Name);
+
+            var doc = new ReportDocument
+            {
+                DocumentId     = Guid.NewGuid().ToString("N"),
+                SourceFileName = file.Name,
+                SourceContent  = content
+            };
+
+            await OnDocumentLoaded.InvokeAsync(doc);
+        }
+        catch (Exception ex)
+        {
+            _parseError = ex.Message;
+            _loadedFileName = string.Empty;
+        }
+        finally
+        {
+            _parsing = false;
+            StateHasChanged();
+        }
     }
 }

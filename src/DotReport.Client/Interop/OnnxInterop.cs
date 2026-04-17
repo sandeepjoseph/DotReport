@@ -62,6 +62,8 @@ public sealed class OnnxInterop(IJSRuntime js) : IAsyncDisposable
         dotNetRef.Dispose();
     }
 
+    public bool IsModelLoaded(string modelId) => _loadedModels.Contains(modelId);
+
     public async Task UnloadModelAsync(string modelId)
     {
         if (!_loadedModels.Contains(modelId)) return;

@@ -1,0 +1,117 @@
+@using Microsoft.AspNetCore.Components.Forms
+@inject DocumentParserFactory ParserFactory
+
+<div class="ec-mfu">
+
+    <label class="ec-mfu__zone @(_dragging ? "ec-mfu__zone--active" : "")
+                               @(_allDone  ? "ec-mfu__zone--done"   : "")"
+           @ondragover:preventDefault="true"
+           @ondragover="() => _dragging = true"
+           @ondragleave="() => _dragging = false"
+           @ondrop:preventDefault="true"
+           @ondrop="() => _dragging = false">
+        <span class="ec-mfu__icon">@(_allDone ? "✓" : "⬆")</span>
+        <span class="ec-mfu__label">
+            @if (_parsing)      { <span>Parsing @_doneCount / @_queue.Count files…</span> }
+            else if (_allDone)  { <span>@_doneCount file@(_doneCount != 1 ? "s" : "") loaded — drop more to add</span> }
+            else                { <span>Drop files here or click to browse</span> }
+        </span>
+        <span class="ec-mfu__sub">PDF · DOCX · XLSX · CSV · TXT · MD &nbsp;·&nbsp; up to 20 files · 20 MB each</span>
+        <InputFile OnChange="HandleFilesSelected"
+                   accept=".txt,.md,.csv,.tsv,.pdf,.docx,.xlsx"
+                   multiple="true"
+                   style="display:none" />
+    </label>
+
+    @if (_queue.Count > 0)
+    {
+        <div class="ec-mfu__queue">
+            @foreach (var item in _queue)
+            {
+                <div class="ec-mfu__item @(item.Done ? "ec-mfu__item--done" : "") @(item.Failed ? "ec-mfu__item--error" : "")">
+                    <span class="ec-mfu__item-icon">@FileIcon(item.FileName)</span>
+                    <span class="ec-mfu__item-name" title="@item.FileName">@Truncate(item.FileName, 28)</span>
+                    <span class="ec-mfu__item-status">@item.Status</span>
+                </div>
+            }
+        </div>
+    }
+
+</div>
+
+@code {
+    [Parameter] public EventCallback<(string FileName, string Content)> OnFileParsed { get; set; }
+
+    private bool _dragging;
+    private bool _parsing;
+    private bool _allDone;
+    private int  _doneCount;
+    private List<QueueItem> _queue = new();
+
+    private sealed class QueueItem
+    {
+        public string FileName { get; init; } = string.Empty;
+        public string Status   { get; set; }  = "Queued";
+        public bool   Done     { get; set; }
+        public bool   Failed   { get; set; }
+    }
+
+    private async Task HandleFilesSelected(InputFileChangeEventArgs e)
+    {
+        var files = e.GetMultipleFiles(20).ToList();
+        _queue     = files.Select(f => new QueueItem { FileName = f.Name }).ToList();
+        _parsing   = true;
+        _allDone   = false;
+        _doneCount = 0;
+        StateHasChanged();
+
+        foreach (var (file, item) in files.Zip(_queue))
+        {
+            item.Status = "Parsing…";
+            StateHasChanged();
+
+            try
+            {
+                using var stream  = file.OpenReadStream(20 * 1024 * 1024);
+                var content = await ParserFactory.ExtractTextAsync(stream, file.Name);
+
+                item.Status = $"{FormatSize(content.Length)} chars";
+                item.Done   = true;
+                _doneCount++;
+
+                await OnFileParsed.InvokeAsync((file.Name, content));
+            }
+            catch (Exception ex)
+            {
+                item.Status = $"Error: {Truncate(ex.InnerException?.Message ?? ex.Message, 60)}";
+                item.Failed = true;
+            }
+
+            StateHasChanged();
+        }
+
+        _parsing = false;
+        _allDone = _queue.Any(q => q.Done);
+        StateHasChanged();
+    }
+
+    private static string FileIcon(string name)
+    {
+        var ext = Path.GetExtension(name).ToLowerInvariant();
+        return ext switch
+        {
+            ".pdf"  => "📄",
+            ".docx" => "📝",
+            ".xlsx" => "📊",
+            ".csv" or ".tsv" => "📋",
+            ".md"   => "📑",
+            _       => "📃"
+        };
+    }
+
+    private static string Truncate(string s, int max)
+        => s.Length <= max ? s : s[..max] + "…";
+
+    private static string FormatSize(int chars)
+        => chars >= 1000 ? $"{chars / 1000}k" : chars.ToString();
+}
